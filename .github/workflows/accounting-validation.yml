@@ -17,15 +17,15 @@ jobs:
       DEMO_BASE_PATH: /teste-crm/
     steps:
       - uses: actions/checkout@v4
-      - name: Materialize reviewed source changes
+      - name: Apply reviewed refinements
         run: |
-          if [ -f .accounting-validation/applied ]; then exit 0; fi
-          python .accounting-validation/apply.py
-          touch .accounting-validation/applied
+          if [ -f .accounting-validation/refined ]; then exit 0; fi
+          python .accounting-validation/refine.py
+          touch .accounting-validation/refined
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'feat: accounting-only identity and three independent pipelines with regression coverage'
+          git commit -m 'fix: refine accounting tooltips, migration and browser assertions'
           git push origin HEAD:feat/accounting-only-demo
       - uses: actions/setup-node@v4
         with:
