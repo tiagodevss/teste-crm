@@ -31,7 +31,7 @@ export function migrateAccountingScenario(value: DemoDatabase, now: Date): DemoD
   const retained = value.leads.filter(lead => lead.pipeId === ACCOUNTING_ID);
   const ids = new Set(retained.map(lead => lead.id));
   const upgraded = {
-    ...value, seedVersion: SEED_VERSION, revision: value.revision + 1,
+    ...value, seedVersion: SEED_VERSION, referenceDate: seed.referenceDate, revision: value.revision + 1,
     leads: [...retained, ...seed.leads.filter(lead => lead.pipeId !== ACCOUNTING_ID)],
     labels: [...value.labels.filter(label => label.pipeId === ACCOUNTING_ID), ...seed.labels.filter(label => label.pipeId !== ACCOUNTING_ID)],
     appointments: value.appointments.filter(item => !item.leadId || ids.has(item.leadId)),

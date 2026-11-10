@@ -273,6 +273,8 @@ def accounting_brand_and_pipes(p,c):
         check(p.locator('img[src*=logo]').count()==0,'Legacy logo image rendered')
     go(p,'/crm')
     for name in ['Contabilidade','Abertura de Empresas','Onboarding Contábil']:expect(p.get_by_role('heading',name=name,exact=True)).to_be_visible()
+    expect(p.get_by_role('button',name='Criar novo funil',exact=True)).to_have_count(0)
+    go(p,'/crm/financeira-demo');expect(p.get_by_role('heading',name='Fluxos de Trabalho',exact=True)).to_be_visible()
     capture(p,'accounting-three-pipeline-picker')
     go(p,'/indicadores/financeira');check(p.url.endswith('/indicadores/geral'),'Retired route did not redirect')
     p.get_by_role('button',name='Sair da demonstração').click();expect(p.get_by_role('button',name='Entrar na demonstração')).to_be_visible()
@@ -298,13 +300,13 @@ def new_pipe_lifecycle(p,c,pipe):
     original=lead(p);go(p,'/lead/'+first)
     p.get_by_text('Ações do processo',exact=True).click();p.get_by_role('button',name='Avançar para '+next_stage,exact=True).click();confirm(p)
     check(lead(p,first)['stage']==next_stage,'Forward move missing')
-    p.get_by_text('Ações do processo',exact=True).click();p.get_by_role('button',name='Retornar para '+initial,exact=True).click()
+    p.get_by_text('Ações do processo',exact=True).click();p.get_by_role('button',name='Retornar para '+initial,exact=True).click();confirm(p)
     p.wait_for_function('([k,id,s])=>JSON.parse(localStorage.getItem(k)).leads.find(l=>l.id===id).stage===s',arg=[KEY,first,initial])
     go(p,'/lead/'+winning);name=lead(p,winning)['name'];p.get_by_text('Ações do processo',exact=True).click();p.get_by_role('button',name=finish,exact=True).click()
     d=p.get_by_role('dialog');d.locator('textarea[name=kanbanObservation]').fill('Conclusao ficticia do processo contabil auditado.');d.get_by_role('button',name='Confirmar conversão',exact=True).click();expect(d).not_to_be_visible()
     p.wait_for_function('([k,id])=>JSON.parse(localStorage.getItem(k)).leads.find(l=>l.id===id).status==="Cliente"',arg=[KEY,winning])
     go(p,'/clientes');p.locator('#clients-list-search').fill(name);p.locator('#clients-list-search').press('Enter');expect(p.get_by_text(name,exact=True).first).to_be_visible()
-    p.reload();expect(p.get_by_text(name,exact=True).first).to_be_visible();check(lead(p)==original,'Other pipeline changed');capture(p,'completed-'+pid)
+    go(p,'/cliente/'+winning);p.reload();expect(p.get_by_role('heading',name=name,exact=True)).to_be_visible();check(lead(p,winning)['status']=='Cliente','Completed status lost');check(lead(p)==original,'Other pipeline changed');capture(p,'completed-'+pid)
 def new_pipe_followup(p,c,pipe):
     pid,slug,title,first,*_=pipe;go(p,'/lead/'+first)
     p.locator('#lead-contact-notes').fill('Atendimento ficticio para o novo processo '+pid)
@@ -328,7 +330,9 @@ def accounting_pipe_viewports(p,c):
     for width in [390,768,1366,1920]:
         p.set_viewport_size({'width':width,'height':900})
         for path in ['/crm','/lead/demo-opening-lead-073','/lead/demo-onboarding-lead-091']:
-            go(p,path);check(p.evaluate('document.documentElement.scrollWidth<=innerWidth+2'),{'width':width,'path':path});capture(p,f'accounting-{width}-'+path.replace('/','-'))
+            go(p,path);p.wait_for_function('!document.querySelector("[aria-busy=true]")');p.wait_for_timeout(150)
+            layout=p.evaluate('''()=>({width:innerWidth,scroll:document.documentElement.scrollWidth,elements:[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>0&&(r.right>innerWidth+2||r.left< -2)&&!e.closest('nav[aria-label="Progresso no funil"]')}).slice(0,30).map(e=>({tag:e.tagName,class:e.className,text:e.textContent.slice(0,90),rect:e.getBoundingClientRect().toJSON(),parent:e.parentElement?.className}))})''')
+            check(layout['scroll']<=width+2,{'path':path,**layout});capture(p,f'accounting-{width}-'+path.replace('/','-'))
         for pipe in NEW_PIPES:
             go(p,'/crm/'+pipe[1]);p.get_by_role('button',name='Novo Lead',exact=True).click();d=p.get_by_role('dialog');expect(d).to_be_visible()
             box=d.bounding_box();check(box['x']>=-2 and box['x']+box['width']<=width+2,{'width':width,'dialog':box})

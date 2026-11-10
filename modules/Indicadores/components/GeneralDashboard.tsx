@@ -493,7 +493,7 @@ export const GeneralDashboard: React.FC = () => {
               Honorários e alertas no tempo
             </h3>
             <p className="text-sm text-gray-500">
-              Receita consolidada e volume de SLAs vencidos para leitura rápida de desempenho e risco.
+              Honorários contratados e volume de SLAs vencidos. Serviços pontuais não são receita recorrente.
             </p>
           </div>
 
@@ -526,7 +526,7 @@ export const GeneralDashboard: React.FC = () => {
                     content={
                       <ChartBarTooltip
                         labelTitle="Período"
-                        formatValue={(value, name) => (name.includes('Receita') ? formatValueCurrency(value, name) : value.toLocaleString('pt-BR'))}
+                        formatValue={(value, name) => ((name.includes('Receita') || name.includes('Honorários')) ? formatValueCurrency(value, name) : value.toLocaleString('pt-BR'))}
                       />
                     }
                   />
@@ -636,7 +636,7 @@ export const GeneralDashboard: React.FC = () => {
                     content={
                       <ChartBarTooltip
                         labelTitle="Operação"
-                        formatValue={(value, name) => (name.includes('Receita') ? formatValueCurrency(value, name) : value.toLocaleString('pt-BR'))}
+                        formatValue={(value, name) => ((name.includes('Receita') || name.includes('Honorários')) ? formatValueCurrency(value, name) : value.toLocaleString('pt-BR'))}
                       />
                     }
                   />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Settings, Kanban, Target, ArrowRight } from 'lucide-react';
+import { Kanban, Target, ArrowRight } from 'lucide-react';
 import type { Pipe, PipeId } from '../../../types';
 import { getPipeIconComponent } from '../../../lib/pipeIcons';
 
@@ -44,18 +44,6 @@ export function CRMPipeGrid({
                     </p>
                 </div>
 
-                <div className="flex gap-3">
-                    <button
-                        type="button"
-                        onClick={onNavigateToCreatePipe}
-                        disabled={isLoading}
-                        className="inline-flex items-center gap-2 px-5 py-2 rounded-lg bg-salesforce-blue text-white text-sm font-semibold hover:bg-salesforce-hover transition-all shadow-md hover:shadow-lg disabled:opacity-50"
-                        aria-label="Criar novo funil"
-                    >
-                        <Plus size={18} />
-                        Novo Funil
-                    </button>
-                </div>
             </header>
 
             {pipes.length === 0 ? (
@@ -63,17 +51,10 @@ export function CRMPipeGrid({
                     <div className="mx-auto w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-6">
                         <Target size={40} className="text-gray-400" />
                     </div>
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhum funil encontrado</h3>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Nenhuma esteira encontrada</h3>
                     <p className="text-gray-500 mb-8 max-w-sm mx-auto">
-                        Comece criando seu primeiro funil de vendas para organizar seus processos comerciais e aumentar suas vendas.
+                        Use Restaurar demo para recuperar as três esteiras de exemplo.
                     </p>
-                    <button
-                        onClick={onNavigateToCreatePipe}
-                        className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-salesforce-blue text-white font-bold hover:bg-salesforce-hover transition-all shadow-lg"
-                    >
-                        <Plus size={20} />
-                        Criar meu primeiro funil
-                    </button>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -88,15 +69,6 @@ export function CRMPipeGrid({
                             >
                                 <button
                                     type="button"
-                                    onClick={() => onNavigateToPipeSettings(pipe.id)}
-                                    className="absolute top-4 right-4 p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-salesforce-blue transition-colors z-10"
-                                    aria-label={`Configurar ${pipe.name}`}
-                                    title={`Configurar ${pipe.name}`}
-                                >
-                                    <Settings size={18} />
-                                </button>
-                                <button
-                                    type="button"
                                     onClick={() => onSelectPipe(pipe.id)}
                                     className="w-full text-left focus:outline-none focus:ring-4 focus:ring-salesforce-blue/10 rounded-2xl"
                                 >
@@ -107,7 +79,7 @@ export function CRMPipeGrid({
                                     </div>
 
                                     <div className="space-y-1 mb-8 flex items-center justify-between">
-                                        <div className="min-w-0 flex-1 pr-10">
+                                        <div className="min-w-0 flex-1 pr-3">
                                             <h3 className="text-xl font-bold text-gray-900 group-hover:text-salesforce-blue transition-colors break-words">
                                                 {pipe.name}
                                             </h3>

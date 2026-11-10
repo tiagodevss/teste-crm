@@ -97,6 +97,7 @@ function Demo({ repository }: { repository: DemoRepository }) {
         <Route path="/indicadores/contabilidade" element={<Indicadores />} />
         <Route path="/indicadores/financeira" element={<Navigate to="/indicadores/geral" replace />} />
         <Route path="/demo/oportunidades" element={<IndicatorLeads />} />
+        <Route path="/crm/financeira-demo" element={<Navigate to="/crm" replace />} />
         <Route path="/crm" element={<CRM />} /><Route path="/crm/:pipeSlug" element={<CRM />} />
         <Route path="/lead/:id" element={<LeadDetail />} /><Route path="/cliente/:id" element={<ClientDetail />} />
         <Route path="/clientes" element={<Clients />} /><Route path="/atividades" element={<Activities />} /><Route path="/atividades/agenda" element={<Activities />} /><Route path="/atividades/equipe" element={<Activities />} />
