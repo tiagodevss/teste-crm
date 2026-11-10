@@ -134,7 +134,7 @@ export const Activities: React.FC = () => {
   if (!user) return <TablePageSkeleton />;
 
   return (
-    <div className="space-y-4 motion-safe:animate-fade-in">
+    <div className="min-w-0 max-w-full overflow-x-hidden space-y-4 motion-safe:animate-fade-in">
       <div className="sr-only" aria-live="polite" aria-atomic="true" id="activities-live-region" />
       <ActivitiesPageHeader
         canManageTeam={canManageTeam}

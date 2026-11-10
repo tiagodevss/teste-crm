@@ -338,7 +338,7 @@ export const AgendaDayView: React.FC<AgendaDayViewProps> = ({
                 }
               />
             ) : (
-              <ul className="space-y-4">
+              <ul className="space-y-4 [&>li:last-child_.activity-timeline-line]:hidden">
                 {visibleItems.map((item) => (
                   <AppointmentActivityRow
                     key={item.id}

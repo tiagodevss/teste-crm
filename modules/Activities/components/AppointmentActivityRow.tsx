@@ -260,7 +260,7 @@ export const AppointmentActivityRow: React.FC<AppointmentActivityRowProps> = ({
       <li className="relative grid grid-cols-[4rem_minmax(0,1fr)] gap-3 sm:grid-cols-[4.75rem_minmax(0,1fr)] sm:gap-4">
         <div className="relative flex justify-center pt-4">
           <span
-            className="absolute bottom-[-1.25rem] top-7 left-1/2 w-px -translate-x-1/2 bg-slate-200"
+            className="activity-timeline-line absolute bottom-[-1.25rem] top-7 left-1/2 w-px -translate-x-1/2 bg-slate-200"
             aria-hidden
           />
           <span
