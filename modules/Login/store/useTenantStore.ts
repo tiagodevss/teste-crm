@@ -19,8 +19,8 @@ export interface PublicSettingsResponse {
 }
 
 const DEFAULT_BRANDING: BrandingConfig = {
-  appName: 'WMS Empresarial',
-  appNameShort: 'WMS Admin',
+  appName: 'CRM Contábil',
+  appNameShort: 'CRM Contábil',
   copyright: 'Tecnologia para Gestão.',
 };
 

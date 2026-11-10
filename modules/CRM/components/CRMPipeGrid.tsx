@@ -40,7 +40,7 @@ export function CRMPipeGrid({
                         </h1>
                     </div>
                     <p className="text-gray-600 text-lg max-w-2xl leading-relaxed">
-                        Escolha um pipeline para gerenciar suas oportunidades comerciais e acompanhar o progresso de seus leads.
+                        Três esteiras contábeis, cada uma com seu processo: conquiste clientes, abra empresas e organize o onboarding.
                     </p>
                 </div>
 
@@ -108,7 +108,7 @@ export function CRMPipeGrid({
 
                                     <div className="space-y-1 mb-8 flex items-center justify-between">
                                         <div className="min-w-0 flex-1 pr-10">
-                                            <h3 className="text-xl font-bold text-gray-900 group-hover:text-salesforce-blue transition-colors truncate">
+                                            <h3 className="text-xl font-bold text-gray-900 group-hover:text-salesforce-blue transition-colors break-words">
                                                 {pipe.name}
                                             </h3>
                                             <p className="text-sm text-gray-500 flex items-center gap-1.5 font-medium line-clamp-2">

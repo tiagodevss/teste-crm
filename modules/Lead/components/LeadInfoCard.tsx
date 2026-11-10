@@ -36,13 +36,9 @@ export interface LeadInfoCardProps {
     campaigns?: { id: string; name: string }[];
     partners?: { id: string; name: string }[];
     getStatusColor: (status: string) => string;
-    /** Funis financeiros: etiquetas compactas e regras do PDF de aprovação. */
-    financeiraKind?: 'credito' | 'repasse' | null;
 }
 
 const COMPACT_LABEL_LIMIT = 2;
-const APPROVAL_PDF_PREFIX = 'resumo da aprovação';
-const APPROVAL_RESULT_KEY = 'resultado_da_avaliacao_a_pasta_';
 
 type LeadPdfTemplate = {
     id: string;
@@ -119,7 +115,6 @@ export function LeadInfoCard({
     campaigns,
     partners,
     getStatusColor,
-    financeiraKind = null,
 }: LeadInfoCardProps) {
     const navigate = useNavigate();
     const pdfMenuRef = useRef<HTMLDivElement>(null);
@@ -130,8 +125,7 @@ export function LeadInfoCard({
     const [downloadingTemplateId, setDownloadingTemplateId] = useState<string | null>(null);
     const activeLabels = labels.filter((label) => label.isActive !== false);
     const [labelsExpanded, setLabelsExpanded] = useState(false);
-    // Funis financeiros: duas primeiras etiquetas em chip compacto + "+N" expansível.
-    const compactLabels = Boolean(financeiraKind) && !labelsExpanded;
+    const compactLabels = !labelsExpanded;
     const visibleLabels = compactLabels ? activeLabels.slice(0, COMPACT_LABEL_LIMIT) : activeLabels;
     const hiddenLabelCount = compactLabels ? Math.max(0, activeLabels.length - COMPACT_LABEL_LIMIT) : 0;
     const inactiveLabels = labels.filter((label) => label.isActive === false);
@@ -140,7 +134,7 @@ export function LeadInfoCard({
     const origemLead = customFieldToDisplayValue(byKey.get('origemLead'));
     const servicoInteresse = customFieldToDisplayValue(byKey.get('servicoInteresse'));
     const tipoAbordagem = customFieldToDisplayValue(byKey.get('tipoAbordagem'));
-    const clienteWms = customFieldToDisplayValue(byKey.get('clienteWms'));
+    const clienteContabil = customFieldToDisplayValue(byKey.get('clienteContabil'));
     const campaignName = lead.campaignName ?? campaigns?.find((c) => c.id === lead.campaignId)?.name ?? lead.campaignId;
     const partnerName = partners?.find((p) => p.id === lead.partnerId)?.name ?? lead.partnerId;
     const sourceLabel =
@@ -350,29 +344,17 @@ export function LeadInfoCard({
                                 >
                                     {pdfTemplates.map((template) => {
                                         const downloading = downloadingTemplateId === template.id;
-                                        const isApprovalTemplate =
-                                            financeiraKind === 'credito' &&
-                                            template.name.trim().toLowerCase().startsWith(APPROVAL_PDF_PREFIX);
-                                        const approved =
-                                            String(byKey.get(APPROVAL_RESULT_KEY)?.value ?? '').trim().toUpperCase() === 'APROVADA';
-                                        const blockedByResult = isApprovalTemplate && !approved;
                                         return (
                                             <button
                                                 key={template.id}
                                                 type="button"
                                                 role="menuitem"
-                                                disabled={Boolean(downloadingTemplateId) || blockedByResult}
-                                                title={blockedByResult ? 'Disponível apenas para avaliação aprovada' : undefined}
+                                                disabled={Boolean(downloadingTemplateId)}
                                                 onClick={() => void downloadPdf(template)}
                                                 className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-left text-sm text-gray-800 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-salesforce-blue"
                                             >
                                                 <span className="min-w-0">
                                                     <span className="block truncate font-medium">{template.name}</span>
-                                                    {blockedByResult ? (
-                                                        <span className="block text-xs font-normal text-gray-500">
-                                                            Disponível apenas para avaliação aprovada
-                                                        </span>
-                                                    ) : null}
                                                 </span>
                                                 {downloading ? (
                                                     <Loader2 size={15} className="shrink-0 animate-spin" aria-hidden />
@@ -413,7 +395,7 @@ export function LeadInfoCard({
                     <InfoRow icon={Megaphone} label="Tipo de abordagem" value={tipoAbordagem} />
                     <InfoRow icon={Megaphone} label="Campanha" value={campaignName} />
                     <InfoRow icon={Handshake} label="Parceiro" value={partnerName} />
-                    <InfoRow icon={FileText} label="Cliente WMS" value={clienteWms} />
+                    <InfoRow icon={FileText} label="Cliente do escritório" value={clienteContabil} />
                     <InfoRow
                         icon={Calendar}
                         label="Último contato"

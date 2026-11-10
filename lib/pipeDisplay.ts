@@ -8,13 +8,6 @@ export function getPipeUnitType(
   return pipes.find((pipe) => pipe.id === pipeId)?.unitType;
 }
 
-export function isFinanceUnitPipe(
-  pipeId: string | undefined,
-  pipes: Pipe[],
-): boolean {
-  return getPipeUnitType(pipeId, pipes) === 'FINANCEIRA';
-}
-
 export function isAccountingUnitPipe(
   pipeId: string | undefined,
   pipes: Pipe[],
@@ -22,21 +15,13 @@ export function isAccountingUnitPipe(
   return getPipeUnitType(pipeId, pipes) === 'CONTABILIDADE';
 }
 
-/** Azul = financeiro, verde = contabilidade (padrão visual WMS). */
+/** Consistent accents for accounting workflows. */
 export function getOperationAccent(unitType?: PipeUnitType | string): {
   bar: string;
   topBorder: string;
   badge: string;
   text: string;
 } {
-  if (unitType === 'FINANCEIRA') {
-    return {
-      bar: 'bg-blue-500',
-      topBorder: 'border-t-blue-500',
-      badge: 'bg-blue-50 text-blue-700 border-blue-200',
-      text: 'text-blue-700',
-    };
-  }
   if (unitType === 'CONTABILIDADE') {
     return {
       bar: 'bg-emerald-500',

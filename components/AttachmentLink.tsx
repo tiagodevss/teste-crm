@@ -15,10 +15,7 @@ interface AttachmentLinkProps {
 
 const DEFAULT_CLASS = 'text-salesforce-blue hover:underline inline-flex items-center gap-1';
 
-/**
- * Link de anexo. Anexos financeiros (armazenamento privado) são abertos por requisição autenticada
- * (blob temporário); anexos legados continuam usando a URL pública original.
- */
+/** Links to demonstration attachments. Private attachments are disabled. */
 export function AttachmentLink({ url, uploadId, label = 'Ver arquivo', className, showIcon = true }: AttachmentLinkProps) {
     const [opening, setOpening] = useState(false);
     const privateId = uploadId || getPrivateUploadId(url);

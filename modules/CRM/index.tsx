@@ -56,12 +56,7 @@ import { buildLeadFilterQuery } from '../../lib/lead-query';
 import { isLeadTemperature, type LeadTemperature } from '../../lib/lead-priority';
 
 import { LeadLossDialog } from '../../components/crm/LeadLossDialog';
-import { useFinanceiraPipe } from '../../lib/financeira-pipes';
 import { buildStageTransitionFields } from '../../lib/stage-transition-fields';
-import { advanceSiopi } from '../../lib/financeira-api';
-import { CreditoLeadModal } from '../Financeira/components/CreditoLeadModal';
-import { RepasseFromCreditoModal } from '../Financeira/components/RepasseFromCreditoModal';
-import { classifyRepasseTransition } from '../../lib/financeira-transitions';
 
 const KANBAN_PAGE_SIZE = 20;
 
@@ -108,8 +103,6 @@ export const CRM: React.FC = () => {
     const isContabilidadePipe = selectedPipe?.unitType === 'CONTABILIDADE';
     const labelsByPipe = useLeadLabelsStore((s) => s.labelsByPipe);
     const pipeLabels = (selectedPipeId ? labelsByPipe[selectedPipeId] : undefined) ?? [];
-    /** Identidade dos funis financeiros (IDs vindos do servidor). */
-    const fin = useFinanceiraPipe(selectedPipeId);
     const pipeFlowForSelected = useSettingsStore((s) => (selectedPipeId ? s.pipeFlowByPipeId[selectedPipeId] : undefined));
     const pipeFlowLoaded = Boolean(selectedPipeId && pipeFlowForSelected);
 
@@ -171,9 +164,9 @@ export const CRM: React.FC = () => {
     const [campaignIdFilter, setCampaignIdFilter] = useState(searchParams.get('campaignId') ?? '');
     const [partnerIdFilter, setPartnerIdFilter] = useState(searchParams.get('partnerId') ?? '');
     const [productIdFilter, setProductIdFilter] = useState(searchParams.get('productId') ?? '');
-    const [clientWmsFilter, setClientWmsFilter] = useState<'' | 'yes' | 'no'>(
-        searchParams.get('clientWms') === 'yes' || searchParams.get('clientWms') === 'no'
-            ? (searchParams.get('clientWms') as 'yes' | 'no')
+    const [existingClientFilter, setExistingClientFilter] = useState<'' | 'yes' | 'no'>(
+        searchParams.get('existingClient') === 'yes' || searchParams.get('existingClient') === 'no'
+            ? (searchParams.get('existingClient') as 'yes' | 'no')
             : '',
     );
     const [dateFieldFilter, setDateFieldFilter] = useState<'createdAt' | 'lastContactDate'>(
@@ -203,7 +196,7 @@ export const CRM: React.FC = () => {
             ...(campaignIdFilter ? { campaignId: campaignIdFilter } : {}),
             ...(partnerIdFilter ? { partnerId: partnerIdFilter } : {}),
             ...(productIdFilter ? { productId: productIdFilter } : {}),
-            ...(clientWmsFilter ? { clientWms: clientWmsFilter } : {}),
+            ...(existingClientFilter ? { existingClient: existingClientFilter } : {}),
             ...(dateFieldFilter ? { dateField: dateFieldFilter } : {}),
             ...(leadStatusFilter ? { status: leadStatusFilter } : {}),
             ...(slaStatusFilter ? { slaStatus: slaStatusFilter } : {}),
@@ -215,7 +208,7 @@ export const CRM: React.FC = () => {
             campaignIdFilter,
             partnerIdFilter,
             productIdFilter,
-            clientWmsFilter,
+            existingClientFilter,
             dateFieldFilter,
             leadStatusFilter,
             slaStatusFilter,
@@ -238,7 +231,7 @@ export const CRM: React.FC = () => {
         setOrDelete('campaignId', campaignIdFilter || undefined);
         setOrDelete('partnerId', partnerIdFilter || undefined);
         setOrDelete('productId', productIdFilter || undefined);
-        setOrDelete('clientWms', clientWmsFilter || undefined);
+        setOrDelete('existingClient', existingClientFilter || undefined);
         setOrDelete('dateField', dateFieldFilter === 'lastContactDate' ? 'lastContactDate' : undefined);
         setOrDelete('status', leadStatusFilter || undefined);
         setOrDelete('slaStatus', slaStatusFilter || undefined);
@@ -250,7 +243,7 @@ export const CRM: React.FC = () => {
         appliedLabelId,
         appliedSearchTerm,
         campaignIdFilter,
-        clientWmsFilter,
+        existingClientFilter,
         dateFieldFilter,
         leadStatusFilter,
         slaStatusFilter,
@@ -552,20 +545,20 @@ export const CRM: React.FC = () => {
     });
 
     const standardStageChange = useMemo(() => {
-        if (!stageChangeModal || fin.isFinanceira) return null;
+        if (!stageChangeModal) return null;
         const { lead, targetStage } = stageChangeModal;
         return buildStageTransitionFields(
             getStageFields(lead.pipeId, lead.stage),
             getStageFields(lead.pipeId, targetStage),
         );
-    }, [stageChangeModal, fin.isFinanceira, getStageFields]);
+    }, [stageChangeModal, getStageFields]);
     const stageChangeFields = useMemo(
         () => standardStageChange?.fields ?? [],
         [standardStageChange],
     );
     const stageChangeSchema = useMemo(
-        () => buildDynamicSchema(stageChangeFields, undefined, { requireKanbanObservation: !fin.isFinanceira }),
-        [stageChangeFields, fin.isFinanceira],
+        () => buildDynamicSchema(stageChangeFields, undefined, { requireKanbanObservation: true }),
+        [stageChangeFields],
     );
     const { register: registerStageChange, handleSubmit: handleSubmitStageChange, control: controlStageChange, reset: resetStageChange, formState: { errors: errorsStageChange } } = useForm({
         resolver: zodResolver(stageChangeSchema),
@@ -763,9 +756,9 @@ export const CRM: React.FC = () => {
         for (const entry of customFields as Array<{ key: string; value?: unknown }>) {
             byKey.set(entry.key, entry);
         }
-        const valorSolicitadoRaw = byKey.get('valorSolicitado')?.value;
-        const valorSolicitado =
-            typeof valorSolicitadoRaw === 'number' ? valorSolicitadoRaw : undefined;
+        const honorariosRaw = byKey.get('honorarios')?.value;
+        const honorarios =
+            typeof honorariosRaw === 'number' ? honorariosRaw : undefined;
         const cpfCnpjRaw = byKey.get('cpfCnpj')?.value;
         const telefoneRaw = byKey.get('telefoneWhatsapp')?.value;
         const companyRaw =
@@ -801,7 +794,7 @@ export const CRM: React.FC = () => {
             pipeId,
             status: LeadStatus.LEAD,
             stage: initialStage,
-            value: valorSolicitado ?? 0,
+            value: honorarios ?? 0,
             cpfCnpj: typeof cpfCnpjRaw === 'string' ? cpfCnpjRaw : undefined,
             phone: resolvedPhone,
             email: emailRaw,
@@ -869,10 +862,10 @@ export const CRM: React.FC = () => {
     };
     const handleDragEnd = () => { setIsDragging(false); setDraggedLeadId(null); setDragOverStage(null); };
 
-    /** Move um card financeiro que não precisa de formulário (sem observação de movimentação). */
-    const moveFinanceiraWithoutForm = async (lead: Lead, targetStage: string) => {
+    /** Official return transitions keep the existing generic behavior. */
+    const moveWithoutForm = async (lead: Lead, targetStage: string) => {
         const sourceStage = lead.stage;
-        const updatedLead = await updateLead(lead.id, buildFinanceiraMoveUpdate(lead, targetStage));
+        const updatedLead = await updateLead(lead.id, buildStageMoveUpdate(lead, targetStage));
         if (temperatureFilter) {
             toast.success(`Lead movido para "${targetStage}".`);
             handleRefreshLeads();
@@ -880,22 +873,6 @@ export const CRM: React.FC = () => {
         }
         await refreshStagesAfterMove(sourceStage, updatedLead.stage ?? targetStage);
         toast.success(`Lead movido para "${targetStage}".`);
-    };
-
-    /** SIOPI segue usando o roteamento automático do domínio, sem diálogo no Kanban. */
-    const handleRepasseSiopiDrop = async (lead: Lead, targetStage: string): Promise<boolean> => {
-        const kind = classifyRepasseTransition(lead, targetStage);
-        if (kind === 'siopi') {
-            try {
-                const result = await advanceSiopi(lead.id, lead.updatedAt);
-                toast.success(`SIOPI concluída. Card movido para "${result.toStage}".`);
-                handleRefreshLeads();
-            } catch (error) {
-                toast.error(getApiErrorMessage(error, 'Não foi possível concluir a SIOPI.'));
-            }
-            return true;
-        }
-        return false;
     };
 
     const handleDrop = async (e: React.DragEvent, targetStage: string) => {
@@ -907,24 +884,18 @@ export const CRM: React.FC = () => {
         setDraggedLeadId(null);
         setIsDragging(false);
         if (!lead) return;
-        if (fin.isRepasse && (await handleRepasseSiopiDrop(lead, targetStage))) return;
-        if (!fin.isRepasse && getStageKind(lead.pipeId, targetStage) === 'loss') { setLossDialog({ lead, targetStage }); return; }
+        if (getStageKind(lead.pipeId, targetStage) === 'loss') { setLossDialog({ lead, targetStage }); return; }
         const allowedNext = getAllowedNextStagesForLead(lead);
         if (allowedNext.length > 0 && !allowedNext.includes(targetStage)) return;
         const isOfficialReturn = lead.availableTransitions?.some(
             (transition) => transition.stageName === targetStage && transition.kind === 'return',
         );
         if (isOfficialReturn) {
-            await moveFinanceiraWithoutForm(lead, targetStage);
+            await moveWithoutForm(lead, targetStage);
             return;
         }
         const shouldCreateClient = pipeDetailByPipeId[lead.pipeId]?.createClientOnFinalStage !== false;
-        if (!fin.isFinanceira && getStageKind(lead.pipeId, targetStage) === 'win' && shouldCreateClient) { handleOpenConversion(lead, targetStage); return; }
-        // Nos funis financeiros, mover no Kanban só altera a etapa. Campos são alterados na tela do lead.
-        if (fin.isFinanceira) {
-            await moveFinanceiraWithoutForm(lead, targetStage);
-            return;
-        }
+        if (getStageKind(lead.pipeId, targetStage) === 'win' && shouldCreateClient) { handleOpenConversion(lead, targetStage); return; }
         const unitStageFields = buildStageTransitionFields(
             getStageFields(lead.pipeId, lead.stage),
             getStageFields(lead.pipeId, targetStage),
@@ -943,20 +914,18 @@ export const CRM: React.FC = () => {
     };
     const canMutateSelectedPipe = !selectedPipeId || canEditPipe(selectedPipeId);
     const newLeadConfig = {
-        // Repasse nasce automaticamente quando o Crédito é concluído: sem criação manual.
-        show: createLeadAction.allowed && canMutateSelectedPipe && !fin.isRepasse,
+        show: createLeadAction.allowed && canMutateSelectedPipe,
         disabled: !createLeadAction.allowed || !canMutateSelectedPipe,
         title: !createLeadAction.allowed
             ? createLeadAction.hint
             : !canMutateSelectedPipe
               ? 'Sem permissão para criar leads neste funil.'
               : undefined,
-        label: fin.isRepasse ? 'Novo card de repasse' : undefined,
     };
     const dragEnabled = Boolean(selectedPipeId) && stageAction.allowed && canEditPipe(selectedPipeId);
 
-    /** Mover card dos funis financeiros: sem observação; status Cliente ao chegar numa etapa de ganho. */
-    const buildFinanceiraMoveUpdate = (lead: Lead, targetStage: string) => ({
+    /** Status follows the configured destination stage. */
+    const buildStageMoveUpdate = (lead: Lead, targetStage: string) => ({
         stage: targetStage,
         ...(getStageKind(lead.pipeId, targetStage) === 'win' ? { status: LeadStatus.CLIENTE } : {}),
     });
@@ -1104,8 +1073,8 @@ export const CRM: React.FC = () => {
                                 productIdFilter={productIdFilter}
                                 onProductIdFilterChange={setProductIdFilter}
                                 products={products}
-                                clientWmsFilter={clientWmsFilter}
-                                onClientWmsFilterChange={setClientWmsFilter}
+                                existingClientFilter={existingClientFilter}
+                                onExistingClientFilterChange={setExistingClientFilter}
                             />
                         )}
                         selectedPipeId={selectedPipeId}
@@ -1133,31 +1102,7 @@ export const CRM: React.FC = () => {
                     />
                 </>
             )}
-            {fin.isCredito && fin.settings && selectedPipeId && (
-                <CreditoLeadModal
-                    isOpen={isCreateModalOpen}
-                    onClose={handleCloseCreateModal}
-                    pipeId={selectedPipeId}
-                    productId={fin.settings.creditoDefaultProductId}
-                    initialStage={getPipelineStagesOrdered(selectedPipeId)[0] ?? 'PASTA RECEBIDA'}
-                    partners={partners}
-                    createLead={createLead}
-                    onCreated={() => {
-                        const firstStage = getPipelineStagesOrdered(selectedPipeId)[0];
-                        if (firstStage) loadStagePage(firstStage, 1, false);
-                        handleCloseCreateModal();
-                    }}
-                />
-            )}
-            {fin.isRepasse && (
-                <RepasseFromCreditoModal
-                    isOpen={isCreateModalOpen}
-                    onClose={handleCloseCreateModal}
-                    onOpenRepasse={(repasseLeadId) => navigate(getLeadDetailPath(repasseLeadId))}
-                    onCreated={() => handleRefreshLeads()}
-                />
-            )}
-            {!fin.isFinanceira && <NewLeadModal
+            <NewLeadModal
                 isOpen={isCreateModalOpen}
                 onClose={handleCloseCreateModal}
                 onSubmit={handleSubmitLead(onCreateLead)}
@@ -1172,7 +1117,7 @@ export const CRM: React.FC = () => {
                 partners={partners}
                 usersList={usersList}
                 user={user}
-                products={products}
+                products={products.filter(product => product.pipeId === selectedPipeId)}
                 campaigns={campaigns}
                 createLeadFields={createLeadDynamicFields}
                 step={leadModalStep}
@@ -1184,10 +1129,10 @@ export const CRM: React.FC = () => {
                 singleStep={isContabilidadePipe}
                 successMessage={leadSuccessMessage}
                 onDismissSuccessMessage={handleCloseCreateModal}
-            />}
+            />
             {lossDialog && <LeadLossDialog key={lossDialog.lead.id} lead={lossDialog.lead} targetStage={lossDialog.targetStage}
                 onClose={() => setLossDialog(null)} onSaved={handleRefreshLeads} />}
-            {!fin.isFinanceira && <StageChangeModal
+            <StageChangeModal
                 isOpen={!!stageChangeModal}
                 lead={stageChangeModal?.lead ?? null}
                 targetStage={stageChangeModal?.targetStage ?? null}
@@ -1200,7 +1145,7 @@ export const CRM: React.FC = () => {
                 onConfirm={handleSubmitStageChange(onConfirmStageChange)}
                 onClose={handleCloseStageChangeModal}
                 hideObservation={false}
-            />}
+            />
             <ConversionModal
                 isOpen={isConversionModalOpen && !!leadToConvert}
                 lead={leadToConvert}

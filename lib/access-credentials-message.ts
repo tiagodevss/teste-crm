@@ -14,7 +14,7 @@ export function buildAccessMessageForClient(
   return [
     'Olá!',
     '',
-    'Seu acesso à plataforma WMS CRM foi criado.',
+    'Seu acesso à plataforma CRM Contábil foi criado.',
     '',
     `Link: ${platformUrl}`,
     `E-mail de login: ${email}`,

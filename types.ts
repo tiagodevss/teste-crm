@@ -19,12 +19,10 @@ export type CampaignStatus = 'draft' | 'active' | 'paused' | 'finished';
 export enum PipeUnitType {
   GERAL = 'GERAL',
   CONTABILIDADE = 'CONTABILIDADE',
-  FINANCEIRA = 'FINANCEIRA',
 }
 
 export enum DashboardUnitView {
   CONTABILIDADE = 'CONTABILIDADE',
-  FINANCEIRA = 'FINANCEIRA',
 }
 
 export enum UserRole {
@@ -922,7 +920,7 @@ export interface Prospect {
     value?: string | number | boolean | string[] | null;
     url?: string;
     fileName?: string;
-    /** Id do upload privado (anexos financeiros). */
+    /** Id do upload privado (anexos privados). */
     uploadId?: string;
     /** Anexos múltiplos: lista completa; o primeiro espelha url/fileName/uploadId. */
     files?: Array<{ url: string; fileName?: string; uploadId?: string }>;
@@ -995,7 +993,7 @@ export interface Prospect {
     validationTiming?: 'entry' | 'exit';
     /** multi_select com checklist: exige todas as opções marcadas para sair da etapa. */
     requireAllOptions?: boolean;
-    /** Obrigatório na saída da etapa mesmo com `required=false` (anexos S do fluxo financeiro). */
+    /** Obrigatório na saída da etapa mesmo com `required=false` (campos de saída). */
     requiredOnExit?: boolean;
   }
 
@@ -1029,7 +1027,7 @@ export interface Prospect {
   export interface Imobiliaria {
     id: string;
     name: string;
-    contactFlag: boolean; // If true, WMS talks to client directly
+    contactFlag: boolean; // If true, the office talks to the client directly
     /** Se false, o parceiro está inativo: some das seleções de novos vínculos, mas mantém o histórico. Ausente é tratado como ativo. */
     active?: boolean;
     activeDeals: number;
@@ -1056,16 +1054,6 @@ export interface Prospect {
     bankInfo?: string;
   }
   
-  export interface FinancialRecord {
-    id: string;
-    date: string;
-    description: string;
-    amount: number;
-    type: 'income' | 'expense';
-    staffId?: string;
-    category: string;
-  }
-  
   export interface StaffGoal {
     id?: string;
     staffId: string;
@@ -1083,7 +1071,7 @@ export interface Prospect {
   }
 
   /**
-   * Meta interna definida pelo parceiro (imobiliária). Não confundir com StaffGoal (WMS).
+   * Meta interna definida pelo parceiro (imobiliária). Não confundir com StaffGoal (escritório).
    * partnerUserId = user.id do usuário logado com role IMOBILIARIA (ex.: u11 no seed).
    */
   export interface PartnerInternalGoal {

@@ -1,6 +1,6 @@
 import { DEMO_PREFERENCES_KEY } from '../lib/demoPreferences.ts';
 import type { DemoDatabase, DemoStorage, DemoResponse } from './types.ts';
-import { STORAGE_KEY, SCHEMA_VERSION, SEED_VERSION, DemoError, STATUS } from './types.ts';
+import { STORAGE_KEY, SCHEMA_VERSION, SEED_VERSION, DemoError, STATUS, ACCOUNTING_ID } from './types.ts';
 import { createSeed, PIPES, USERS } from './seed.ts';
 import { execute } from './model.ts';
 
@@ -21,13 +21,37 @@ export function validateDatabase(value: unknown): asserts value is DemoDatabase 
   for (const label of db.labels) if (!PIPES.some(p => p.id === label.pipeId) || typeof label.name !== 'string' || !/^#[\da-fA-F]{6}$/.test(label.color)) fail();
 }
 
+/** Upgrade the old demo once, preserving accounting records and their activities. */
+export function migrateAccountingScenario(value: DemoDatabase, now: Date): DemoDatabase {
+  if (value?.schemaVersion !== SCHEMA_VERSION || value.seedVersion !== '2026-11-10.1') return value;
+  if (!Array.isArray(value.leads) || !Array.isArray(value.appointments) || !Array.isArray(value.labels)) {
+    throw new DemoError(409, 'Cenário anterior inválido. Restaure a demonstração.');
+  }
+  const seed = createSeed(now);
+  const retained = value.leads.filter(lead => lead.pipeId === ACCOUNTING_ID);
+  const ids = new Set(retained.map(lead => lead.id));
+  const upgraded = {
+    ...value, seedVersion: SEED_VERSION, revision: value.revision + 1,
+    leads: [...retained, ...seed.leads.filter(lead => lead.pipeId !== ACCOUNTING_ID)],
+    labels: [...value.labels.filter(label => label.pipeId === ACCOUNTING_ID), ...seed.labels.filter(label => label.pipeId !== ACCOUNTING_ID)],
+    appointments: value.appointments.filter(item => !item.leadId || ids.has(item.leadId)),
+    notifications: seed.notifications,
+  };
+  validateDatabase(upgraded);
+  return upgraded;
+}
+
 /** Mutations are atomic: validation or storage failures never leave a half-updated in-memory state. */
 export function createRepository(storage: DemoStorage, now: () => Date = () => new Date()) {
   let raw: string | null;
   try { raw = storage.getItem(STORAGE_KEY); } catch { throw new DemoError(507, 'O navegador bloqueou o armazenamento local. Permita o armazenamento deste site para usar a demo.'); }
   let db: DemoDatabase;
   if (raw) {
-    try { db = JSON.parse(raw); validateDatabase(db); } catch (error) { throw error instanceof DemoError ? error : new DemoError(409, 'Os dados locais est\u00e3o ileg\u00edveis. Restaure a demonstra\u00e7\u00e3o para continuar.'); }
+    try { db = migrateAccountingScenario(JSON.parse(raw), now()); validateDatabase(db); } catch (error) { throw error instanceof DemoError ? error : new DemoError(409, 'Os dados locais est\u00e3o ileg\u00edveis. Restaure a demonstra\u00e7\u00e3o para continuar.'); }
+    if (JSON.stringify(db) !== raw) {
+      try { storage.setItem(STORAGE_KEY, JSON.stringify(db)); storage.removeItem(DEMO_PREFERENCES_KEY); }
+      catch { throw new DemoError(507, 'Não foi possível atualizar o cenário local. Libere espaço e tente novamente.'); }
+    }
   } else {
     db = createSeed(now()); validateDatabase(db);
     try { storage.setItem(STORAGE_KEY, JSON.stringify(db)); } catch { throw new DemoError(507, 'N\u00e3o foi poss\u00edvel salvar a demo. Libere armazenamento local e tente novamente.'); }

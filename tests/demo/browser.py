@@ -55,7 +55,7 @@ try:
             expect(page.get_by_role('button', name='Entrar na demonstração')).to_be_visible(timeout=20000)
             capture('login')
             login()
-            for route in ['indicadores/geral', 'indicadores/contabilidade', 'indicadores/financeira', 'crm', 'crm/contabilidade-demo', 'crm/financeira-demo', 'lead/demo-lead-001', 'atividades', 'atividades/agenda', 'atividades/equipe', 'clientes', 'cliente/demo-lead-005']:
+            for route in ['indicadores/geral', 'indicadores/contabilidade', 'crm', 'crm/contabilidade-demo', 'crm/abertura-empresas-demo', 'crm/onboarding-contabil-demo', 'lead/demo-lead-001', 'atividades', 'atividades/agenda', 'atividades/equipe', 'clientes', 'cliente/demo-lead-005']:
                 go('/' + route)
                 capture(route.replace('/', '_'))
                 assert not page.get_by_text('Esta tela não pôde ser exibida').count(), route

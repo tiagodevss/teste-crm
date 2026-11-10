@@ -1,6 +1,6 @@
 const FILTER_KEYS = [
   'search', 'pipeId', 'status', 'stage', 'origin', 'sourceSubtype',
-  'campaignId', 'partnerId', 'productId', 'clientWms', 'dateField',
+  'campaignId', 'partnerId', 'productId', 'existingClient', 'dateField',
   'dateFrom', 'dateTo', 'ownerUserId', 'labelId', 'slaStatus', 'temperature',
 ] as const;
 export type LeadFilterQuery = Partial<Record<(typeof FILTER_KEYS)[number], string>> & {

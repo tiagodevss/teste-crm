@@ -1,6 +1,6 @@
 import { LeadAppointment } from '../../types';
 
-export const ACTIVITIES_NEW_EVENT = 'wms:activities-new';
+export const ACTIVITIES_NEW_EVENT = 'contabil:activities-new';
 
 export function getAppointmentEntityLabel(item: LeadAppointment): string {
   return item.lead?.name ?? item.prospect?.name ?? 'Sem vínculo';

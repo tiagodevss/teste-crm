@@ -105,7 +105,7 @@ test('resolved page is written back to the URL after list mutations', () => {
 test('URL-backed filters can be rehydrated when browser history changes', () => {
   const state = getProspectUrlFilterState(
     new URLSearchParams(
-      'page=4&status=contatado&sla=overdue&ownerUserId=u1&city=Campinas&origin=partner&clientWms=yes&dateField=contactDate&search=acme',
+      'page=4&status=contatado&sla=overdue&ownerUserId=u1&city=Campinas&origin=partner&existingClient=yes&dateField=contactDate&search=acme',
     ),
   );
   assert.equal(state.statusQuickFilter, 'contatado');
@@ -113,17 +113,17 @@ test('URL-backed filters can be rehydrated when browser history changes', () => 
   assert.equal(state.assignedUserId, 'u1');
   assert.equal(state.cityFilter, 'Campinas');
   assert.equal(state.sourceTypeFilter, 'partner');
-  assert.equal(state.clientWmsFilter, 'yes');
+  assert.equal(state.existingClientFilter, 'yes');
   assert.equal(state.dateField, 'contactDate');
   assert.equal(state.search, 'acme');
 });
 
 test('invalid URL-backed enum filters fall back to their neutral values', () => {
   const state = getProspectUrlFilterState(
-    new URLSearchParams('status=unknown&sla=late&origin=foo&clientWms=maybe'),
+    new URLSearchParams('status=unknown&sla=late&origin=foo&existingClient=maybe'),
   );
   assert.equal(state.statusQuickFilter, '');
   assert.equal(state.slaFilter, '');
   assert.equal(state.sourceTypeFilter, '');
-  assert.equal(state.clientWmsFilter, '');
+  assert.equal(state.existingClientFilter, '');
 });

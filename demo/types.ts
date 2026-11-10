@@ -2,12 +2,13 @@ import type { Lead, LeadAppointment, LeadLabel, Notification, PipeDetail } from 
 import type { CommercialFeedback } from '../lib/commercial-feedback';
 
 export const SCHEMA_VERSION = 1;
-export const SEED_VERSION = '2026-11-10.1';
+export const SEED_VERSION = '2026-11-10.accounting.2';
 export const STORAGE_KEY = 'teste-crm:database:v1';
 export const HERO_ID = 'demo-lead-001';
 export const ADMIN_ID = 'demo-presenter';
 export const ACCOUNTING_ID = 'demo-accounting';
-export const FINANCIAL_ID = 'demo-financial';
+export const OPENING_ID = 'demo-opening';
+export const ONBOARDING_ID = 'demo-onboarding';
 export const DAY_MS = 86_400_000;
 export const STATUS = { lead: 'Lead', opportunity: 'Oportunidade', won: 'Cliente', lost: 'Perdido' } as const;
 export interface DemoPipe extends PipeDetail { slug: string }

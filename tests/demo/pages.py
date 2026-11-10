@@ -30,7 +30,7 @@ try:
         assert scope['worker']==BASE+'mockServiceWorker.js',scope
         assert scope['controller']==scope['worker'],scope
         checks.append('MSW controller and scope remain inside project path')
-        for route in ['/indicadores/financeira','/lead/demo-lead-001','/cliente/demo-lead-005','/atividades/agenda']:
+        for route in ['/crm/onboarding-contabil-demo','/lead/demo-lead-001','/cliente/demo-lead-005','/atividades/agenda']:
             p.goto(BASE+'#'+route);expect(p.locator('.demo-toolbar')).to_be_visible();p.reload();expect(p.locator('.demo-toolbar')).to_be_visible()
             assert urlsplit(p.url).path==urlsplit(BASE).path,p.url
             assert not p.get_by_text('Esta tela não pôde ser exibida').count()

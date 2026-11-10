@@ -46,7 +46,7 @@ export interface ProspectUrlFilterState {
   campaignIdFilter: string;
   partnerIdFilter: string;
   productIdFilter: string;
-  clientWmsFilter: '' | 'yes' | 'no';
+  existingClientFilter: '' | 'yes' | 'no';
   dateField: 'createdAt' | 'contactDate';
   search: string;
 }
@@ -76,8 +76,8 @@ export function getProspectUrlFilterState(
       ? sourceType
       : '';
 
-  const clientWms = params.get('clientWms');
-  const clientWmsFilter = clientWms === 'yes' || clientWms === 'no' ? clientWms : '';
+  const existingClient = params.get('existingClient');
+  const existingClientFilter = existingClient === 'yes' || existingClient === 'no' ? existingClient : '';
 
   return {
     statusQuickFilter,
@@ -92,7 +92,7 @@ export function getProspectUrlFilterState(
     campaignIdFilter: params.get('campaignId') ?? '',
     partnerIdFilter: params.get('partnerId') ?? '',
     productIdFilter: params.get('productId') ?? '',
-    clientWmsFilter,
+    existingClientFilter,
     dateField: params.get('dateField') === 'contactDate' ? 'contactDate' : 'createdAt',
     search: params.get('search') ?? '',
   };

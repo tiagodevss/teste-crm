@@ -7,7 +7,6 @@ import { UserAvatar } from '../../../components/ui/UserAvatar';
 import { LeadFlowAnomalyBadge } from '../../Lead/components/LeadFlowAnomalySection';
 import { getCustomFieldValue } from '../../../utils/leadCustomFields';
 import { formatDate, formatCurrency } from '../../../utils/formatters';
-import { isFinanceUnitPipe } from '../../../lib/pipeDisplay';
 import { isLeadAnomalyFlagged } from '../../../lib/lead-anomaly';
 import { useInfiniteScroll } from '../../../hooks/useInfiniteScroll';
 import type { StageData } from '../schemas';
@@ -26,35 +25,6 @@ function getLeadOriginLabel(lead: Lead): string | null {
     }
     if (lead.origin?.trim()) return lead.origin.trim();
     return null;
-}
-
-function toPositiveNumber(raw: unknown): number | null {
-    if (raw === null || raw === undefined || raw === '') return null;
-    let n: number;
-    if (typeof raw === 'number') {
-        n = raw;
-    } else {
-        const text = String(raw).replace(/[^\d,.-]/g, '');
-        // "1.234,56" (pt-BR) vs "1234.56"
-        n = parseFloat(text.includes(',') ? text.replace(/\./g, '').replace(',', '.') : text);
-    }
-    return Number.isFinite(n) && n > 0 ? n : null;
-}
-
-/** Valor do financiamento: negociado (Crédito) > snapshot do Crédito (Repasse) > solicitado > valor do lead. null quando não informado. */
-function getDisplayValue(lead: Lead): number | null {
-    return (
-        toPositiveNumber(getCustomFieldValue(lead, 'valor_negociado_valor_da')) ??
-        // Repasse: snapshot somente leitura copiado do Crédito.
-        toPositiveNumber(getCustomFieldValue(lead, 'credito_valor_negociado_valor_da')) ??
-        toPositiveNumber(getCustomFieldValue(lead, 'valorSolicitado')) ??
-        toPositiveNumber(lead.value)
-    );
-}
-
-function formatFinanceValue(lead: Lead): string {
-    const value = getDisplayValue(lead);
-    return value == null ? 'Valor não informado' : formatCurrency(value);
 }
 
 function getAppointmentTypeLabel(type?: string): string {
@@ -151,15 +121,9 @@ export function KanbanColumn({
                         <div className="flex justify-between items-start mb-1 gap-2">
                             <h4 className="font-semibold text-sm truncate flex-1">{draggedLead.name}</h4>
                         </div>
-                        {isFinanceUnitPipe(draggedLead.pipeId, pipes) ? (
-                            <div className="text-xs text-blue-700 font-medium bg-blue-100/80 px-1.5 py-0.5 rounded w-fit">
-                                {formatFinanceValue(draggedLead)}
-                            </div>
-                        ) : (
-                            <div className="text-xs text-emerald-700 font-medium bg-emerald-100/80 px-1.5 py-0.5 rounded w-fit">
+                        <div className="text-xs text-emerald-700 font-medium bg-emerald-100/80 px-1.5 py-0.5 rounded w-fit">
                                 {(getCustomFieldValue(draggedLead, 'regimeTributario') as string) || draggedLead.productName || 'N/A'}
                             </div>
-                        )}
                         <p className={`text-[10px] font-semibold mt-2 ${canDropHere ? 'text-green-700' : 'text-red-600'}`}>
                             {canDropHere ? '✓ Solte aqui' : '✕ Conexão não permitida'}
                         </p>
@@ -184,11 +148,7 @@ export function KanbanColumn({
                             <GripVertical size={14} className="text-gray-400 opacity-60 group-hover:opacity-100 shrink-0" aria-hidden />
                         </div>
                         <div className="mb-2.5">
-                            {isFinanceUnitPipe(lead.pipeId, pipes) ? (
-                                <div className="text-xs text-blue-700 font-medium bg-blue-50 px-1.5 py-0.5 rounded w-fit">{formatFinanceValue(lead)}</div>
-                            ) : (
-                                <div className="text-xs text-emerald-700 font-medium bg-emerald-50 px-1.5 py-0.5 rounded w-fit">{(getCustomFieldValue(lead, 'regimeTributario') as string) || lead.productName || 'N/A'}</div>
-                            )}
+                            <div className="text-xs text-emerald-700 font-medium bg-emerald-50 px-1.5 py-0.5 rounded w-fit">{(getCustomFieldValue(lead, 'regimeTributario') as string) || lead.productName || 'N/A'}</div>
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5 mb-2">
                             <LeadFlowAnomalyBadge lead={lead} />

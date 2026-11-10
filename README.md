@@ -1,4 +1,4 @@
-# CRM WMS — demonstração independente
+# CRM Contábil — demonstração independente
 
 Versão exclusivamente frontend com dados fictícios para apresentações. Os comandos deste repositório executam somente a demo. Não existe configuração para selecionar o backend operacional.
 
@@ -57,7 +57,11 @@ As suítes usam o build compilado, os componentes reais e o service worker real.
 
 ## Escopo e cuidados
 
-Inclui Indicadores Geral/Contabilidade/Financeira, CRM, oportunidades, atendimento, agenda, clientes e restauração do cenário. A Financeira é ilustrativa; não implementa a jornada especializada Crédito/Repasse. Módulos fora do roteiro não são liberados.
+Inclui indicadores, CRM, oportunidades, atendimentos, agenda, clientes e restauração do cenário. Há três esteiras contábeis independentes: **Contabilidade** (72 registros), **Abertura de Empresas** (18) e **Onboarding Contábil** (18). Cada esteira tem etapas, campos iniciais, produto e etiquetas próprios. Não há transferência automática entre elas.
+
+A visão geral compara as três esteiras. Honorários contratados somam a primeira mensalidade e os serviços pontuais concluídos, sem multiplicar mensalidades. Receita recorrente aparece apenas em Comercial contábil e considera somente a esteira Contabilidade.
+
+A atualização migra o cenário anterior preservando os registros contábeis e suas atividades, remove a antiga operação e acrescenta as novas esteiras. Dados inválidos continuam exigindo recuperação explícita. A identidade é genérica, sem logos de clientes.
 
 Não use dados pessoais, credenciais ou documentos reais. A demo não faz autenticação real, não envia mensagens e não sincroniza dados entre dispositivos. O código deste repositório e o site Pages são públicos. O aviso de dados fictícios permanece visível.
 

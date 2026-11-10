@@ -76,14 +76,17 @@ interface EvolutionPoint {
   label: string;
   totalLeads: number;
   accountingLeads: number;
-  financialLeads: number;
+  openingLeads: number;
+  onboardingLeads: number;
   totalRevenue: number;
   conversionRate: number;
   criticalAlerts: number;
 }
 
 interface OperationSharePoint {
-  operation: 'Contabilidade' | 'Financeira';
+  operation: string;
+  pipeId: string;
+  slug: string;
   leads: number;
   revenue: number;
   alertsCount: number;
@@ -93,7 +96,6 @@ interface OperationSharePoint {
 interface GeneralResponse {
   summary: GeneralSummary;
   accounting: OperationSide;
-  financial: OperationSide;
   evolution?: EvolutionPoint[];
   operationShare?: OperationSharePoint[];
 }
@@ -106,7 +108,8 @@ const HEALTH_LABELS: Record<'GOOD' | 'ATTENTION' | 'CRITICAL', string> = {
 
 const PIE_COLORS: Record<string, string> = {
   Contabilidade: '#10b981',
-  Financeira: '#2563eb',
+  'Abertura de Empresas': '#2563eb',
+  'Onboarding Contábil': '#7c3aed',
 };
 
 export const GeneralDashboard: React.FC = () => {
@@ -121,7 +124,7 @@ export const GeneralDashboard: React.FC = () => {
   const [chartTab, setChartTab] = useState<ChartTab>('evolucao');
   const chartTabs: { key: ChartTab; label: string }[] = [
     { key: 'evolucao', label: 'Evolução' },
-    { key: 'receita', label: 'Receita e alertas' },
+    { key: 'receita', label: 'Honorários e alertas' },
     { key: 'participacao', label: 'Participação' },
     { key: 'comparativo', label: 'Comparativo' },
   ];
@@ -247,7 +250,6 @@ export const GeneralDashboard: React.FC = () => {
 
   const s = data.summary;
   const acc = data.accounting;
-  const fin = data.financial;
   const evolution = data.evolution ?? [];
   const operationShare = data.operationShare ?? [];
   const hasEvolutionData = evolution.some(
@@ -261,22 +263,7 @@ export const GeneralDashboard: React.FC = () => {
     (point) => point.leads > 0 || point.revenue > 0 || point.alertsCount > 0,
   );
 
-  const operationComparison = [
-    {
-      operation: 'Contabilidade',
-      leads: acc.totalLeads,
-      revenue: acc.recurringRevenue ?? 0,
-      alertsCount: acc.alertsCount,
-      conversionRate: acc.conversionRate ?? 0,
-    },
-    {
-      operation: 'Financeira',
-      leads: fin.totalLeads,
-      revenue: fin.releasedValue ?? 0,
-      alertsCount: fin.alertsCount,
-      conversionRate: fin.approvalRate ?? 0,
-    },
-  ];
+  const operationComparison = operationShare;
 
   const drillOwner = responsibleId || undefined;
 
@@ -355,13 +342,13 @@ export const GeneralDashboard: React.FC = () => {
           onClick={() => navigateCrm(CRM_DRILL_DOWN.allLeads(drillOwner))}
         />
         <KpiCard
-          title="Receita total fechada"
+          title="Honorários contratados"
           value={formatCurrency(s.totalRevenue)}
           change={s.totalRevenueChange}
           changeLabel="vs período anterior"
           icon={DollarSign}
           color="green"
-          tooltip="Receita contábil + valor financeiro liberado"
+          tooltip="Primeira mensalidade e serviços pontuais contratados. Não é receita recorrente."
         />
         <KpiCard
           title="Conversão geral"
@@ -390,14 +377,13 @@ export const GeneralDashboard: React.FC = () => {
         >
           Contabilidade: {(acc.conversionRate ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 1 })}% conversão
         </button>
-        <span className="text-gray-300" aria-hidden>·</span>
-        <button
-          type="button"
-          onClick={() => navigate(AppPath.INDICADORES_FINANCEIRA)}
-          className="font-semibold text-blue-700 hover:text-blue-900 underline-offset-2 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500/30 rounded"
-        >
-          Financeira: {(fin.approvalRate ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 1 })}% liberação
-        </button>
+        {operationShare.filter(item => item.pipeId !== 'demo-accounting').map(item => <React.Fragment key={item.pipeId}>
+          <span className="text-gray-300" aria-hidden>·</span>
+          <button type="button" className="font-semibold text-blue-800 hover:underline focus-visible:ring-2 rounded"
+            onClick={() => navigateCrm(`/crm?pipeId=${item.pipeId}${drillOwner ? `&ownerUserId=${drillOwner}` : ''}`)}>
+            {item.operation}: {item.leads} processos
+          </button>
+        </React.Fragment> )}
       </div>
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
@@ -441,7 +427,7 @@ export const GeneralDashboard: React.FC = () => {
             Evolução executiva
           </h3>
           <p className="text-sm text-gray-500">
-            Leads por operação com leitura simultânea da conversão geral no mesmo período.
+            Processos por esteira com leitura simultânea da conversão geral no mesmo período.
           </p>
         </div>
 
@@ -475,7 +461,8 @@ export const GeneralDashboard: React.FC = () => {
                 />
                 <Legend />
                 <Bar yAxisId="left" dataKey="accountingLeads" name="Leads contábeis" fill="#10b981" radius={[4, 4, 0, 0]} />
-                <Bar yAxisId="left" dataKey="financialLeads" name="Leads financeiros" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="openingLeads" name="Abertura de Empresas" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                <Bar yAxisId="left" dataKey="onboardingLeads" name="Onboarding Contábil" fill="#7c3aed" radius={[4, 4, 0, 0]} />
                 <Line
                   yAxisId="right"
                   type="monotone"
@@ -503,7 +490,7 @@ export const GeneralDashboard: React.FC = () => {
           <div className="mb-4 flex flex-col gap-1">
             <h3 className="text-sm font-bold text-gray-700 flex items-center gap-2">
               <DollarSign size={16} className="text-emerald-500" aria-hidden />
-              Receita e alertas no tempo
+              Honorários e alertas no tempo
             </h3>
             <p className="text-sm text-gray-500">
               Receita consolidada e volume de SLAs vencidos para leitura rápida de desempenho e risco.
@@ -544,7 +531,7 @@ export const GeneralDashboard: React.FC = () => {
                     }
                   />
                   <Legend />
-                  <Bar yAxisId="money" dataKey="totalRevenue" name="Receita fechada" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar yAxisId="money" dataKey="totalRevenue" name="Honorários contratados" fill="#10b981" radius={[4, 4, 0, 0]} />
                   <Line
                     yAxisId="alerts"
                     type="monotone"
@@ -621,14 +608,14 @@ export const GeneralDashboard: React.FC = () => {
             Comparativo entre operações
           </h3>
           <p className="text-sm text-gray-500">
-            Leads, receita, conversão e alertas lado a lado para leitura executiva rápida.
+            Processos, honorários, conversão e alertas lado a lado para leitura executiva rápida.
           </p>
         </div>
 
         {!hasOperationShareData ? (
           <ChartEmptyState
             title="Sem comparativo para mostrar"
-            description="A comparação entre Contabilidade e Financeira depende de dados no período selecionado."
+            description="A comparação entre as esteiras contábeis depende de dados no período selecionado."
           />
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-[1.1fr_0.9fr] gap-4">

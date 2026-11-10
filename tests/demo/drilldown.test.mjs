@@ -8,8 +8,8 @@ test('dashboard drilldowns preserve cohort, operation, owner and status', () => 
   for (const [key,value] of Object.entries({status:'Cliente', ownerUserId:'demo-ana', dateFrom:'2026-10-01', dateTo:'2026-11-10', dateField:'createdAt', pipeId:'demo-accounting'})) assert.equal(result.searchParams.get(key),value);
 });
 test('general drilldown preserves a selected pipe while unbounded ranges remain unbounded', () => {
-  const result = new URL(buildDemoDrilldown('/crm?pipeId=demo-financial&slaStatus=overdue', {}, 'general'), 'http://demo.local');
-  assert.equal(result.searchParams.get('pipeId'),'demo-financial');
+  const result = new URL(buildDemoDrilldown('/crm?pipeId=demo-opening&slaStatus=overdue', {}, 'general'), 'http://demo.local');
+  assert.equal(result.searchParams.get('pipeId'),'demo-opening');
   assert.equal(result.searchParams.get('slaStatus'),'overdue');
   assert.equal(result.searchParams.get('dateFrom'),null);
   assert.equal(result.searchParams.get('dateTo'),null);

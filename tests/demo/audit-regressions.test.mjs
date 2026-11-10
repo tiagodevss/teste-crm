@@ -131,7 +131,7 @@ test('QA-10: malformed optional preferences are recoverable and failing preferen
   assert.equal(readDatePreference(denied,'x',true),null);assert.doesNotThrow(()=>writeDatePreference(denied,'x','today',true));
 });
 test('QA-11: agenda lookup by id is exact, limits are bounded and missing id gives no match', () => {
-  const {request}=setup(); const id='demo-lead-079';
+  const {request}=setup(); const id='demo-opening-lead-079';
   const rows=request('GET','/lead-appointments/leads/search',{}, {id,limit:'1'}); assert.equal(rows.length,1);assert.equal(rows[0].id,id);
   assert.equal(request('GET','/lead-appointments/leads/search',{}, {id:'missing',limit:'1'}).length,0);
   assert.equal(request('GET','/lead-appointments/leads/search',{}, {limit:'2'}).length,2);

@@ -3,7 +3,7 @@ import { useWatch } from 'react-hook-form';
 import type { UseFormRegister, Control, FieldErrors, UseFormSetValue } from 'react-hook-form';
 import { Lead, FieldConfig } from '../../../types';
 import { Modal, ModalHeader, ModalFooter } from '../../../components/ui/Modal';
-import { DynamicFieldRenderer, type FinanceiraUploadContext } from '../../../components/DynamicFieldRenderer';
+import { DynamicFieldRenderer } from '../../../components/DynamicFieldRenderer';
 import { filterVisibleFields, getEditableFieldKeys } from '../../../lib/field-rules';
 import { buildFieldRuleContext } from '../../../lib/field-rule-context';
 import { useUserStore } from '../../Login/store/useUserStore';
@@ -21,10 +21,9 @@ export interface LeadStageChangeModalProps {
     setUploadingAttachmentKey: (key: string | null) => void;
     onConfirm: (e?: React.BaseSyntheticEvent) => Promise<void>;
     onClose: () => void;
-    /** Funis financeiros: a observação de movimentação não é pedida. */
+
     hideObservation?: boolean;
-    /** Funis financeiros: anexos vão para o armazenamento privado. */
-    financeiraUploadContext?: FinanceiraUploadContext;
+
 }
 
 export function LeadStageChangeModal({
@@ -41,7 +40,6 @@ export function LeadStageChangeModal({
     onConfirm,
     onClose,
     hideObservation = false,
-    financeiraUploadContext,
 }: LeadStageChangeModalProps) {
     const watchedValues = useWatch({ control }) as Record<string, unknown>;
     const userProfileCode = useUserStore((state) => state.user?.profile?.code ?? state.user?.role);
@@ -122,8 +120,7 @@ export function LeadStageChangeModal({
                         {visibleFields.map((field) => (
                             <div key={field.key} className={!editableKeys.has(field.key) ? 'pointer-events-none opacity-60' : undefined}>
                                 <DynamicFieldRenderer
-                                    financeiraUploadContext={financeiraUploadContext}
-                                    field={field}
+                                                                    field={field}
                                     register={register}
                                     control={control}
                                     errors={errors}

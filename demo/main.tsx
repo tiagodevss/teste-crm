@@ -7,10 +7,14 @@ import '../modules/CRM/components/pdf-template-editor.css';
 
 async function bootstrap() {
   if (!isDemo) throw new Error('Este arquivo exige o build exclusivo da demonstra\u00e7\u00e3o.');
-  if (['crm.wmsempresarial.com.br', 'api-crm.wmsempresarial.com.br'].includes(location.hostname)) throw new Error('Publique a demo em uma origem separada do ambiente operacional.');
   if (!window.isSecureContext || !('serviceWorker' in navigator)) throw new Error('Abra a demo em HTTPS ou localhost. N\u00e3o abra index.html diretamente.');
   installNetworkGuard();
+  const before = localStorage.getItem('teste-crm:database:v1');
   const repository = createRepository(localStorage);
+  if (before && before !== localStorage.getItem('teste-crm:database:v1')) {
+    // Re-authenticate only on the one-time scenario migration, before stores hydrate.
+    sessionStorage.removeItem('teste-crm:auth:v1');
+  }
   await startDemoWorker(repository);
   installStreamingGuard();
   const { mountDemo } = await import('./DemoApp');

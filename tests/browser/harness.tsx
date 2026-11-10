@@ -29,7 +29,7 @@ api.defaults.adapter = async config => {
  let data: any = [];
  if (path === '/settings') data = { slaDays: 5 };
  else if (path === '/pipes/pipe-test') data = pipe;
- else if (path === '/settings/public') data = { pipes: [pipe], branding: { appName: 'WMS Empresarial', appNameShort: 'WMS' } };
+ else if (path === '/settings/public') data = { pipes: [pipe], branding: { appName: 'CRM Contábil', appNameShort: 'CRM Contabil' } };
  else if (path === '/lead/lead-test') data = structuredClone(lead);
  else if (path === '/leads/lead-test/commercial-feedback') data = structuredClone(feedback);
  else if (path === '/leads/lead-test/response-deadline') { feedback.responseDeadline = payload.responseDeadline; data = structuredClone(feedback); }

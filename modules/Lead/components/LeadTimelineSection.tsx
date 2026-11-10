@@ -37,7 +37,7 @@ export interface LeadTimelineSectionProps {
     isRegisteringContactAttempt: boolean;
     comments: LeadComment[];
     timeline: LeadTimelineEvent[];
-    /** false nos funis financeiros: sem formulário de atendimento/follow-up (comentários e histórico permanecem). */
+
     showCommercialContactForm?: boolean;
 }
 
@@ -237,7 +237,7 @@ export function LeadTimelineSection({
                                         )}
                                         {event.type === 'department_handoff' && event.metadata?.dueAt ? (
                                             <p className="text-xs text-indigo-700 mt-1.5">
-                                                Prazo do financeiro:{' '}
+                                                Prazo do atendimento:{' '}
                                                 {formatDate(String(event.metadata.dueAt))} às{' '}
                                                 {new Date(String(event.metadata.dueAt)).toLocaleTimeString(
                                                     'pt-BR',
