@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+body { margin: 0; color: #181b21; background: #f3f4f6; }
+:focus-visible { outline: 2px solid #0176d3; outline-offset: 3px; }
+::selection { color: #fff; background: #005fb8; }
+.demo-layout { min-height: 100dvh; display: grid; grid-template-columns: 220px minmax(0, 1fr); }
+.demo-sidebar { background: #081526; color: #fff; padding: 24px 14px; display: flex; flex-direction: column; gap: 28px; }
+.demo-sidebar a { display: flex; gap: 12px; padding: 12px; border-radius: 8px; align-items: center; color: #cbd5e1; }
+.demo-sidebar a:hover, .demo-sidebar a[aria-current="page"] { background: #152e4d; color: #fff; }
+.demo-sidebar img { width: 160px; height: auto; margin: 0 auto; }
+.demo-main { min-width: 0; }
+.demo-toolbar { position: sticky; top: 0; z-index: 30; background: #fff; border-bottom: 1px solid #d1d5db; padding: 12px 24px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.demo-content { --demo-content-inset: 24px; padding: var(--demo-content-inset); }
+.demo-content .lead-detail-header { margin-inline: calc(-1 * var(--demo-content-inset)); padding-inline: var(--demo-content-inset); }
+.demo-button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 9px 13px; border: 1px solid #cbd5e1; border-radius: 7px; background: white; color: #1f2937; font-size: 14px; font-weight: 600; }
+.demo-button:hover { background: #f1f5f9; }
+.demo-button:disabled { opacity: .6; cursor: wait; }
+.demo-primary { background: #0176d3; border-color: #0176d3; color: #fff; }
+.demo-primary:hover { background: #005fb8; }
+.demo-entry { min-height: 100dvh; display: grid; place-items: center; padding: 28px; }
+.demo-entry section { max-width: 540px; width: 100%; padding: 40px; background: white; border: 1px solid #d1d5db; border-radius: 12px; }
+.demo-entry h1 { font-size: 30px; font-weight: 700; line-height: 1.25; margin: 28px 0 16px; }
+.demo-entry p { color: #4b5563; line-height: 1.6; margin: 12px 0; }
+.demo-entry .demo-button { margin-top: 16px; }
+.demo-note { color: #475569; font-size: 13px; line-height: 1.5; }
+.demo-error { padding: 16px; color: #991b1b; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; }
+@media (max-width: 900px) {
+  .demo-layout { display: block; }
+  .demo-sidebar { padding: 12px 16px; gap: 12px; }
+  .demo-sidebar img { width: 110px; margin: 0; }
+  .demo-sidebar nav { display: flex; flex-wrap: wrap; gap: 2px; }
+  .demo-sidebar nav a { font-size: 13px; padding: 8px; gap: 6px; }
+  .demo-sidebar footer { display: none; }
+  .demo-content { --demo-content-inset: 16px; }
+  .demo-toolbar { padding: 16px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; scroll-behavior: auto !important; } }

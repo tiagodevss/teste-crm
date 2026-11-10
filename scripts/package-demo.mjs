@@ -1,0 +1,11 @@
+import { copyFileSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import path from 'node:path';
+const root = process.cwd(); const output = path.join(root, 'dist-demo');
+if (!existsSync(path.join(output, 'index.html'))) throw new Error('Execute npm run build:demo primeiro.');
+const html = readFileSync(path.join(output, 'index.html'), 'utf8');
+if (/cdn\.tailwindcss|fonts\.googleapis|fonts\.gstatic/.test(html)) throw new Error('O pacote ainda depende de recursos externos.');
+copyFileSync(path.join(root, 'scripts/serve-demo.mjs'), path.join(output, 'serve.mjs'));
+copyFileSync(path.join(root, 'docs/demo/README.md'), path.join(output, 'LEIA-ME.md'));
+writeFileSync(path.join(output, 'INICIAR.cmd'), '@echo off\r\ncd /d "%~dp0"\r\nwhere node >nul 2>nul\r\nif errorlevel 1 (echo Instale Node.js 22 antes de executar a demo. & pause & exit /b 1)\r\nnode serve.mjs\r\npause\r\n');
+writeFileSync(path.join(output, 'iniciar.sh'), '#!/bin/sh\nset -eu\ncd "$(dirname "$0")"\nexec node serve.mjs\n', { mode: 0o755 });
+console.log('Pacote pronto em dist-demo. Node.js 22; sem npm install ou backend.');

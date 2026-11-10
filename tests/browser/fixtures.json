@@ -1,0 +1,136 @@
+{
+  "user": {
+    "id": "operator-test",
+    "name": "Operador de teste",
+    "role": "ADMIN",
+    "profile": {
+      "id": "admin",
+      "code": "ADMIN",
+      "isAdmin": true
+    },
+    "email": "operator@example.invalid",
+    "permissions": {
+      "navigation": {
+        "crm": true
+      },
+      "actions": {},
+      "pipeAccess": {
+        "pipe-test": "edit"
+      }
+    }
+  },
+  "pipe": {
+    "id": "pipe-test",
+    "name": "Contabilidade",
+    "steps": [
+      {
+        "id": "entry",
+        "name": "Entrada",
+        "stageKind": "default",
+        "positionX": 0,
+        "positionY": 0,
+        "fields": [],
+        "sortOrder": 0
+      },
+      {
+        "id": "proposal",
+        "name": "Proposta",
+        "stageKind": "default",
+        "positionX": 220,
+        "positionY": 0,
+        "fields": [],
+        "sortOrder": 1
+      },
+      {
+        "id": "follow",
+        "name": "Follow-up",
+        "stageKind": "default",
+        "positionX": 440,
+        "positionY": 0,
+        "fields": [],
+        "sortOrder": 2
+      },
+      {
+        "id": "loss",
+        "name": "N\u00e3o aceito",
+        "stageKind": "loss",
+        "positionX": 660,
+        "positionY": 0,
+        "fields": [],
+        "sortOrder": 3
+      }
+    ],
+    "actions": [
+      {
+        "id": "entry-proposal",
+        "fromStepId": "entry",
+        "toStepId": "proposal",
+        "kind": "manual"
+      },
+      {
+        "id": "proposal-follow",
+        "fromStepId": "proposal",
+        "toStepId": "follow",
+        "kind": "manual"
+      }
+    ],
+    "fields": []
+  },
+  "lead": {
+    "id": "lead-test",
+    "name": "Cliente de valida\u00e7\u00e3o",
+    "company": "Empresa de teste",
+    "pipeId": "pipe-test",
+    "status": "Oportunidade",
+    "stage": "Proposta",
+    "value": 2000,
+    "email": "cliente@example.invalid",
+    "phone": "11999990000",
+    "ownerUserId": "operator-test",
+    "ownerUserName": "Operador de teste",
+    "createdAt": "2026-01-01T12:00:00Z",
+    "updatedAt": "2026-09-15T10:00:00Z",
+    "lastContactDate": "2026-09-10T12:00:00Z",
+    "labels": [
+      {
+        "id": "hot",
+        "name": "Leads quentes",
+        "color": "#ef4444"
+      }
+    ],
+    "comments": [],
+    "customFields": [],
+    "timeline": [
+      {
+        "id": "attendance-old",
+        "type": "contact_attempt",
+        "date": "2026-09-10T12:00:00Z",
+        "description": "Ligacao realizada. Atendimento antigo: proposta apresentada e retorno combinado.",
+        "actor": {
+          "id": "operator-test",
+          "name": "Operador de teste"
+        },
+        "metadata": {
+          "type": "ligacao_realizada",
+          "recordedAt": "2026-09-11T12:00:00Z",
+          "notes": "Atendimento antigo: proposta apresentada e retorno combinado."
+        },
+        "userName": "Operador de teste",
+        "userId": "operator-test"
+      }
+    ],
+    "slaStatus": "disabled"
+  },
+  "feedback": {
+    "responseDeadline": null,
+    "loss": null,
+    "lossStages": [
+      {
+        "id": "loss",
+        "name": "N\u00e3o aceito"
+      }
+    ],
+    "canEditDeadline": true,
+    "canRegisterLoss": true
+  }
+}
