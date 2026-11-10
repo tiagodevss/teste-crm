@@ -1,0 +1,97 @@
+name: Refine and validate activities redesign
+on:
+  push:
+    branches: [feat/activities-redesign]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: activities-redesign-refine
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      DEMO_BASE_PATH: /teste-crm/
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply responsive refinements
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('modules/Activities/index.tsx')
+          s = p.read_text()
+          s = s.replace(
+              '<div className="space-y-4 motion-safe:animate-fade-in">',
+              '<div className="min-w-0 max-w-full overflow-x-hidden space-y-4 motion-safe:animate-fade-in">',
+          )
+          p.write_text(s)
+
+          p = Path('modules/Activities/components/AppointmentActivityRow.tsx')
+          s = p.read_text()
+          s = s.replace(
+              'className="absolute bottom-[-1.25rem] top-7 left-1/2 w-px -translate-x-1/2 bg-slate-200"',
+              'className="activity-timeline-line absolute bottom-[-1.25rem] top-7 left-1/2 w-px -translate-x-1/2 bg-slate-200"',
+          )
+          p.write_text(s)
+
+          p = Path('modules/Activities/components/AgendaDayView.tsx')
+          s = p.read_text()
+          s = s.replace(
+              '<ul className="space-y-4">',
+              '<ul className="space-y-4 [&>li:last-child_.activity-timeline-line]:hidden">',
+              1,
+          )
+          p.write_text(s)
+          PY
+          rm -f .github/workflows/activities-redesign-refine.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix: contain mobile activities layout'
+          git push origin HEAD:feat/activities-redesign
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build:pages
+      - run: python -m pip install playwright==1.57.0
+      - run: python -m playwright install --with-deps chromium
+      - run: npm run test:demo:browser
+      - run: npm run test:demo:audit
+      - run: npm run test:pages
+      - run: |
+          node tests/browser/build.mjs
+          python tests/browser/test_feedback.py
+
+      - name: Preserve validation evidence
+        if: always()
+        run: |
+          mkdir -p validation
+          git archive --format=zip HEAD -o validation/source.zip
+          git rev-parse HEAD > validation/commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: activities-redesign-refined
+          path: |
+            validation/
+            audit-results/
+            demo-test-results/
+            node_modules/.cache/feedback-browser/*.png
+          retention-days: 7
