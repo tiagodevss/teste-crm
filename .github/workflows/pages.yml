@@ -1,0 +1,108 @@
+name: Validate and deploy demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DEMO_BASE_PATH: /teste-crm/
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Compile the exact Pages artifact
+        id: build
+        run: npm run build:pages
+      - run: python -m pip install playwright==1.57.0
+      - name: Install browser
+        id: browser
+        run: python -m playwright install --with-deps chromium
+      - name: Validate original presentation journey
+        run: npm run test:demo:browser
+      - name: Validate all audited flows
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.browser.outcome == 'success' }}
+        run: npm run test:demo:audit
+      - name: Validate Pages paths and service worker isolation
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.browser.outcome == 'success' }}
+        run: npm run test:pages
+      - name: Validate shared UI regressions
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.browser.outcome == 'success' }}
+        run: |
+          node tests/browser/build.mjs
+          python tests/browser/test_feedback.py
+      - name: Preserve source and compiled checksums
+        if: always()
+        run: |
+          mkdir -p validation
+          git archive --format=zip HEAD -o validation/source.zip
+          git rev-parse HEAD > validation/commit.txt
+          if [ -d dist-demo ]; then
+            find dist-demo -type f -print0 | sort -z | xargs -0 sha256sum > validation/build-checksums.txt
+          fi
+      - name: Preserve validation evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: demo-validation-${{ github.run_id }}
+          path: |
+            validation/
+            demo-test-results/
+            audit-results/
+            node_modules/.cache/feedback-browser/*.png
+          retention-days: 7
+      - name: Upload verified Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        if: ${{ success() && github.repository == 'tiagodevss/teste-crm' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+        with:
+          path: dist-demo
+
+  deploy:
+    if: ${{ github.repository == 'tiagodevss/teste-crm' && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # One-time activation: Settings > Pages > Source: GitHub Actions.
+      # No personal access token or repository visibility change is required.
+      - name: Check Pages configuration
+        id: pages
+        uses: actions/configure-pages@v5
+      - name: Publish verified static application
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Explain initial Pages activation
+        if: ${{ failure() && steps.pages.outcome == 'failure' }}
+        run: |
+          echo '## Initial GitHub Pages activation required' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Open https://github.com/tiagodevss/teste-crm/settings/pages and select Source: GitHub Actions, then re-run this workflow on main.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'The public demo repository can use GitHub Pages on the free plan. No personal access token is needed.' >> "$GITHUB_STEP_SUMMARY"
