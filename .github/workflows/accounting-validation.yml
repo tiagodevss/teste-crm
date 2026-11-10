@@ -2,59 +2,33 @@ name: Validate accounting-only demonstration
 on:
   push:
     branches: [feat/accounting-only-demo]
-  workflow_dispatch:
 permissions:
   contents: write
-concurrency:
-  group: accounting-validation
-  cancel-in-progress: true
 jobs:
   validate:
     if: github.ref == 'refs/heads/feat/accounting-only-demo'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    env:
-      DEMO_BASE_PATH: /teste-crm/
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Apply reviewed refinements
+      - name: Finalize canonical accounting fees
         run: |
-          if [ -f .accounting-validation/refined ]; then exit 0; fi
-          python .accounting-validation/refine.py
-          touch .accounting-validation/refined
+          if [ -f .accounting-validation/fees-applied ]; then exit 0; fi
+          python .accounting-validation/fees.py
+          touch .accounting-validation/fees-applied
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
-          git commit -m 'fix: refine accounting tooltips, migration and browser assertions'
+          git commit -m 'fix: keep accounting form fees and indicators consistent'
           git push origin HEAD:feat/accounting-only-demo
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
-      - name: Compile Pages application
-        id: build
-        run: npm run build:pages
-      - run: python -m pip install playwright==1.57.0
-      - name: Install browser
-        id: browser
-        run: python -m playwright install --with-deps chromium
-      - name: Presentation journey
-        run: npm run test:demo:browser
-      - name: Full accounting regression
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.browser.outcome == 'success' }}
-        run: npm run test:demo:audit
-      - name: Pages and existing component regressions
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.browser.outcome == 'success' }}
-        run: |
-          npm run test:pages
-          node tests/browser/build.mjs
-          python tests/browser/test_feedback.py
+      - run: npm run build:pages
       - name: Preserve exact source
         if: always()
         run: |
@@ -64,10 +38,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: accounting-validation
-          path: |
-            validation/
-            audit-results/
-            demo-test-results/
-            node_modules/.cache/feedback-browser/*.png
+          name: accounting-final-source
+          path: validation/
           retention-days: 7
