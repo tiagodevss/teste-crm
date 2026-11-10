@@ -1,5 +1,5 @@
 import React from 'react';
-import { CalendarClock } from 'lucide-react';
+import { CalendarDays, UserRound } from 'lucide-react';
 import { ACTIVITIES_INPUT_CLASS } from '../activitiesUi';
 
 interface ActivitiesPageHeaderProps {
@@ -16,48 +16,50 @@ export function ActivitiesPageHeader({
   usersList,
 }: ActivitiesPageHeaderProps) {
   return (
-    <header className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2.5 text-balance">
-          <span
-            className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-salesforce-blue/10 text-salesforce-blue shrink-0"
-            aria-hidden
-          >
-            <CalendarClock size={22} strokeWidth={2} />
-          </span>
-          Atividades
-        </h1>
-        <p className="text-sm text-gray-600 mt-1.5 max-w-2xl leading-relaxed">
-          Retornos, compromissos e carteira por consultor — mantenha o pipeline em movimento. Atalhos:{' '}
-          <kbd className="px-1 py-0.5 rounded border border-gray-300 bg-white font-mono text-xs">Alt</kbd>
-          {' + '}
-          <kbd className="px-1 py-0.5 rounded border border-gray-300 bg-white font-mono text-xs">N</kbd>
-          {' nova atividade · '}
-          <kbd className="px-1 py-0.5 rounded border border-gray-300 bg-white font-mono text-xs">Alt</kbd>
-          {' + '}
-          <kbd className="px-1 py-0.5 rounded border border-gray-300 bg-white font-mono text-xs">1–3</kbd>
-          {' trocar aba.'}
-        </p>
+    <header className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex min-w-0 items-start gap-3">
+        <span
+          className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-salesforce-blue ring-1 ring-inset ring-blue-100"
+          aria-hidden
+        >
+          <CalendarDays size={24} strokeWidth={2} />
+        </span>
+        <div className="min-w-0 pt-0.5">
+          <h1 className="text-2xl font-bold tracking-[-0.02em] text-slate-950 text-balance">
+            Atividades
+          </h1>
+          <p className="mt-1 text-sm leading-relaxed text-slate-600">
+            Retornos, compromissos e produtividade da equipe.
+          </p>
+        </div>
       </div>
 
       {canManageTeam ? (
-        <div className="flex flex-col gap-1.5 w-full sm:w-auto shrink-0">
-          <label htmlFor="activities-audit-owner" className="text-xs font-semibold text-gray-700">
-            Ver atividades de
-          </label>
-          <select
-            id="activities-audit-owner"
-            value={auditOwnerId}
-            onChange={(e) => onAuditOwnerChange(e.target.value)}
-            className={`${ACTIVITIES_INPUT_CLASS} px-3 py-2.5 min-w-[220px] min-h-[44px] sm:min-h-0`}
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <span
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 ring-1 ring-inset ring-slate-200"
+            aria-hidden
           >
-            <option value="">Meu usuário</option>
-            {usersList.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name}
-              </option>
-            ))}
-          </select>
+            <UserRound size={18} />
+          </span>
+          <div className="min-w-0 flex-1 sm:flex-none">
+            <label htmlFor="activities-audit-owner" className="sr-only">
+              Ver atividades de
+            </label>
+            <select
+              id="activities-audit-owner"
+              value={auditOwnerId}
+              onChange={(e) => onAuditOwnerChange(e.target.value)}
+              className={`${ACTIVITIES_INPUT_CLASS} min-h-[40px] w-full px-3 py-2 sm:min-w-[190px]`}
+            >
+              <option value="">Meu usuário</option>
+              {usersList.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       ) : null}
     </header>

@@ -1,16 +1,27 @@
 import React from 'react';
-import { CheckCircle2, ExternalLink, Pencil } from 'lucide-react';
-import { LeadAppointment } from '../../../types';
 import {
+  CheckCircle2,
+  ExternalLink,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Pencil,
+  Phone,
+  Video,
+} from 'lucide-react';
+import type { LeadAppointment } from '../../../types';
+import {
+  APPOINTMENT_CHANNEL_LABEL,
   APPOINTMENT_STATUS_CLASS,
   APPOINTMENT_STATUS_LABEL,
+  APPOINTMENT_TYPE_LABEL,
 } from '../constants';
 import { getLeadDetailPath, getProspectDetailPath } from '../../../routes';
 import {
-  APPOINTMENT_CHANNEL_LABEL,
-  APPOINTMENT_TYPE_LABEL,
-} from '../constants';
-import { ACTIVITIES_FOCUS_RING, APPOINTMENT_TYPE_CHIP_CLASS, ROW_ACTION_BUTTON_CLASS } from '../activitiesUi';
+  ACTIVITIES_FOCUS_RING,
+  APPOINTMENT_TYPE_CHIP_CLASS,
+  ROW_ACTION_BUTTON_CLASS,
+} from '../activitiesUi';
 
 export function getAppointmentNavigationTarget(
   item: LeadAppointment,
@@ -31,8 +42,7 @@ export function getAppointmentNavigationTarget(
 }
 
 function getActivityTitle(item: LeadAppointment) {
-  const entityName = item.lead?.name ?? item.prospect?.name;
-  return entityName ?? 'Sem vínculo';
+  return item.lead?.name ?? item.prospect?.name ?? 'Sem vínculo';
 }
 
 function formatTime(value: string) {
@@ -40,6 +50,16 @@ function formatTime(value: string) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function ChannelIcon({ channel }: { channel: string }) {
+  const props = { size: 14, strokeWidth: 2, 'aria-hidden': true } as const;
+  if (channel === 'phone') return <Phone {...props} />;
+  if (channel === 'video_call') return <Video {...props} />;
+  if (channel === 'in_person') return <MapPin {...props} />;
+  if (channel === 'whatsapp') return <MessageCircle {...props} />;
+  if (channel === 'email') return <Mail {...props} />;
+  return null;
 }
 
 interface AppointmentActivityRowProps {
@@ -59,6 +79,97 @@ interface AppointmentActivityRowProps {
   showFullDateTime?: boolean;
   formatDateTime: (value: string) => string;
   highlightUrgent?: boolean;
+  layout?: 'list' | 'timeline';
+}
+
+interface ActivityActionsProps {
+  item: LeadAppointment;
+  typeLabel: string;
+  onComplete?: (item: LeadAppointment) => void;
+  onEdit?: (item: LeadAppointment) => void;
+  onStatusChange?: (
+    item: LeadAppointment,
+    status: 'canceled' | 'no_show',
+    label: string,
+  ) => void;
+  canComplete: boolean;
+  isCompleting: boolean;
+  isMutating: boolean;
+  direction?: 'row' | 'column';
+}
+
+function ActivityActions({
+  item,
+  typeLabel,
+  onComplete,
+  onEdit,
+  onStatusChange,
+  canComplete,
+  isCompleting,
+  isMutating,
+  direction = 'row',
+}: ActivityActionsProps) {
+  const isScheduled = item.status === 'scheduled';
+  if (!isScheduled) return null;
+  const rowBusy = isCompleting || isMutating;
+  const showComplete = canComplete && onComplete;
+  const showActions = onEdit || onStatusChange;
+  if (!showComplete && !showActions) return null;
+
+  return (
+    <div
+      className={
+        direction === 'column'
+          ? 'flex shrink-0 flex-col justify-center gap-1.5'
+          : 'flex flex-wrap items-center gap-2'
+      }
+    >
+      {onEdit ? (
+        <button
+          type="button"
+          onClick={() => onEdit(item)}
+          disabled={rowBusy}
+          className={`${ROW_ACTION_BUTTON_CLASS} text-slate-700 bg-white border-slate-200 hover:bg-slate-50`}
+        >
+          <Pencil size={14} aria-hidden />
+          Reagendar
+        </button>
+      ) : null}
+      {showComplete ? (
+        <button
+          type="button"
+          onClick={() => onComplete(item)}
+          disabled={isCompleting || rowBusy}
+          aria-label={`Marcar atividade ${typeLabel} · ${getActivityTitle(item)} como concluída`}
+          aria-busy={isCompleting}
+          className={`${ROW_ACTION_BUTTON_CLASS} text-emerald-800 bg-emerald-50 border-emerald-200 hover:bg-emerald-100`}
+        >
+          <CheckCircle2 size={14} aria-hidden />
+          Concluir
+        </button>
+      ) : null}
+      {onStatusChange ? (
+        <>
+          <button
+            type="button"
+            disabled={rowBusy}
+            onClick={() => onStatusChange(item, 'no_show', 'Não compareceu')}
+            className={`${ROW_ACTION_BUTTON_CLASS} text-amber-900 bg-amber-50 border-amber-200 hover:bg-amber-100`}
+          >
+            Não veio
+          </button>
+          <button
+            type="button"
+            disabled={rowBusy}
+            onClick={() => onStatusChange(item, 'canceled', 'Cancelar atividade')}
+            className={`${ROW_ACTION_BUTTON_CLASS} text-rose-800 bg-rose-50 border-rose-200 hover:bg-rose-100`}
+          >
+            Cancelar
+          </button>
+        </>
+      ) : null}
+    </div>
+  );
 }
 
 export const AppointmentActivityRow: React.FC<AppointmentActivityRowProps> = ({
@@ -74,27 +185,137 @@ export const AppointmentActivityRow: React.FC<AppointmentActivityRowProps> = ({
   showFullDateTime = false,
   formatDateTime,
   highlightUrgent = false,
+  layout = 'list',
 }) => {
   const target = getAppointmentNavigationTarget(item);
   const isClickable = Boolean(target);
-  const isScheduled = item.status === 'scheduled';
-  const rowBusy = isCompleting || isMutating;
-  const showComplete = canComplete && isScheduled && onComplete;
-  const showActions = isScheduled && (onEdit || onStatusChange);
   const typeLabel = APPOINTMENT_TYPE_LABEL[item.type] ?? item.type;
   const channelLabel = APPOINTMENT_CHANNEL_LABEL[item.channel] ?? item.channel;
   const typeChipClass =
     APPOINTMENT_TYPE_CHIP_CLASS[item.type] ?? 'bg-gray-50 text-gray-700 border-gray-200';
+  const statusClass =
+    APPOINTMENT_STATUS_CLASS[item.status] ?? 'bg-gray-50 text-gray-600 border-gray-200';
 
+  const activityContent = (
+    <button
+      type="button"
+      onClick={() => target && onNavigate(target.path)}
+      disabled={!isClickable}
+      aria-label={target?.label ?? `${typeLabel}: ${getActivityTitle(item)}`}
+      className={`group/target min-w-0 flex-1 text-left ${ACTIVITIES_FOCUS_RING} rounded-lg ${
+        isClickable ? 'cursor-pointer' : 'cursor-default'
+      }`}
+    >
+      <div className="flex min-w-0 items-start gap-3">
+        <div className="min-w-0 flex-1 space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-md border ${typeChipClass}`}
+            >
+              {typeLabel}
+            </span>
+            {channelLabel ? (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-500">
+                <ChannelIcon channel={item.channel} />
+                {channelLabel}
+              </span>
+            ) : null}
+            <span
+              className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-md border ${statusClass}`}
+            >
+              {APPOINTMENT_STATUS_LABEL[item.status] ?? item.status}
+            </span>
+          </div>
+
+          <p className="truncate text-[15px] font-semibold text-slate-950">
+            {getActivityTitle(item)}
+          </p>
+
+          {showFullDateTime ? (
+            <p className="text-sm text-slate-500 tabular-nums">{formatDateTime(item.scheduledAt)}</p>
+          ) : null}
+
+          {item.notes ? (
+            <p className="line-clamp-2 text-xs leading-relaxed text-slate-500">{item.notes}</p>
+          ) : null}
+
+          {!isClickable ? (
+            <p className="text-xs text-slate-400">Atividade sem vínculo com lead ou prospecção</p>
+          ) : null}
+        </div>
+
+        {isClickable ? (
+          <ExternalLink
+            size={16}
+            className="mt-0.5 shrink-0 text-slate-300 transition-colors group-hover/target:text-salesforce-blue"
+            aria-hidden
+          />
+        ) : null}
+      </div>
+    </button>
+  );
+
+  if (layout === 'timeline') {
+    return (
+      <li className="relative grid grid-cols-[4rem_minmax(0,1fr)] gap-3 sm:grid-cols-[4.75rem_minmax(0,1fr)] sm:gap-4">
+        <div className="relative flex justify-center pt-4">
+          <span
+            className="absolute bottom-[-1.25rem] top-7 left-1/2 w-px -translate-x-1/2 bg-slate-200"
+            aria-hidden
+          />
+          <span
+            className={`absolute left-1/2 top-[1.35rem] z-10 h-2.5 w-2.5 -translate-x-1/2 rounded-full ring-4 ring-white ${
+              highlightUrgent ? 'bg-rose-500' : 'bg-blue-500'
+            }`}
+            aria-hidden
+          />
+          {showTime ? (
+            <time
+              dateTime={item.scheduledAt}
+              className={`relative z-20 mt-6 rounded-md px-2 py-1 text-xs font-bold tabular-nums ring-1 ring-inset ${
+                highlightUrgent
+                  ? 'bg-rose-50 text-rose-700 ring-rose-100'
+                  : 'bg-blue-50 text-blue-700 ring-blue-100'
+              }`}
+            >
+              {formatTime(item.scheduledAt)}
+            </time>
+          ) : null}
+        </div>
+
+        <article
+          className={`rounded-xl border bg-white p-4 shadow-sm transition-shadow hover:shadow-md sm:p-5 ${
+            highlightUrgent ? 'border-rose-200' : 'border-slate-200'
+          }`}
+        >
+          {activityContent}
+          {item.status === 'scheduled' && (onEdit || onStatusChange || (canComplete && onComplete)) ? (
+            <div className="mt-4 border-t border-slate-100 pt-3">
+              <ActivityActions
+                item={item}
+                typeLabel={typeLabel}
+                onComplete={onComplete}
+                onEdit={onEdit}
+                onStatusChange={onStatusChange}
+                canComplete={canComplete}
+                isCompleting={isCompleting}
+                isMutating={isMutating}
+              />
+            </div>
+          ) : null}
+        </article>
+      </li>
+    );
+  }
 
   return (
     <li
       className={`group flex items-stretch transition-colors ${
-        highlightUrgent ? 'bg-amber-50/60 hover:bg-amber-50' : 'hover:bg-gray-50/80'
+        highlightUrgent ? 'bg-amber-50/60 hover:bg-amber-50' : 'hover:bg-slate-50/80'
       }`}
     >
       {showTime ? (
-        <div className="w-[4.5rem] shrink-0 flex items-center justify-center border-r border-gray-100 bg-gray-50/50 py-3">
+        <div className="flex w-[4.5rem] shrink-0 items-center justify-center border-r border-slate-100 bg-slate-50/50 py-3">
           <time
             dateTime={item.scheduledAt}
             className={`text-sm font-semibold tabular-nums ${
@@ -106,131 +327,21 @@ export const AppointmentActivityRow: React.FC<AppointmentActivityRowProps> = ({
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => target && onNavigate(target.path)}
-        disabled={!isClickable}
-        aria-label={target?.label ?? `${typeLabel}: ${getActivityTitle(item)}`}
-        className={`flex-1 min-w-0 px-4 py-3 flex items-start gap-3 text-left ${ACTIVITIES_FOCUS_RING} ${
-          isClickable ? 'cursor-pointer' : 'cursor-default'
-        }`}
-      >
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-md border ${typeChipClass}`}
-            >
-              {typeLabel}
-            </span>
-            {channelLabel ? (
-              <span className="text-xs text-gray-500">{channelLabel}</span>
-            ) : null}
-            <span
-              className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-md border ml-auto sm:ml-0 ${
-                APPOINTMENT_STATUS_CLASS[item.status] ?? 'bg-gray-50 text-gray-600 border-gray-200'
-              }`}
-            >
-              {APPOINTMENT_STATUS_LABEL[item.status] ?? item.status}
-            </span>
-          </div>
+      <div className="flex min-w-0 flex-1 px-4 py-3">{activityContent}</div>
 
-          <p className="font-medium text-gray-900 truncate">{getActivityTitle(item)}</p>
-
-          {showFullDateTime ? (
-            <p className="text-sm text-gray-500 tabular-nums">{formatDateTime(item.scheduledAt)}</p>
-          ) : null}
-
-          {item.notes ? (
-            <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{item.notes}</p>
-          ) : null}
-
-          {!isClickable ? (
-            <p className="text-xs text-gray-400">Atividade sem vínculo com lead ou prospecção</p>
-          ) : null}
-        </div>
-
-        {isClickable ? (
-          <ExternalLink
-            size={16}
-            className="shrink-0 mt-0.5 text-gray-300 group-hover:text-salesforce-blue transition-colors"
-            aria-hidden
+      {item.status === 'scheduled' && (onEdit || onStatusChange || (canComplete && onComplete)) ? (
+        <div className="flex shrink-0 items-center border-l border-slate-100 px-2 py-2">
+          <ActivityActions
+            item={item}
+            typeLabel={typeLabel}
+            onComplete={onComplete}
+            onEdit={onEdit}
+            onStatusChange={onStatusChange}
+            canComplete={canComplete}
+            isCompleting={isCompleting}
+            isMutating={isMutating}
+            direction="column"
           />
-        ) : null}
-      </button>
-
-      {showActions || showComplete ? (
-        <div className="shrink-0 flex flex-col justify-center gap-1.5 px-2 py-2 border-l border-gray-100 min-w-[6.5rem] sm:min-w-[7.5rem]">
-          {onEdit ? (
-            <button
-              type="button"
-              onClick={() => onEdit(item)}
-              disabled={rowBusy}
-              className={`${ROW_ACTION_BUTTON_CLASS} text-gray-700 bg-white border-gray-200 hover:bg-gray-50`}
-            >
-              <Pencil size={14} aria-hidden />
-              Reagendar
-            </button>
-          ) : null}
-          {showComplete ? (
-            <button
-              type="button"
-              onClick={() => onComplete(item)}
-              disabled={isCompleting || rowBusy}
-              aria-label={`Marcar atividade ${typeLabel} · ${getActivityTitle(item)} como concluída`}
-              aria-busy={isCompleting}
-              className={`${ROW_ACTION_BUTTON_CLASS} text-emerald-800 bg-emerald-50 border-emerald-100 hover:bg-emerald-100`}
-            >
-              <CheckCircle2 size={14} aria-hidden />
-              Concluir
-            </button>
-          ) : null}
-          {onStatusChange ? (
-            <>
-              <details className="sm:hidden">
-                <summary
-                  className={`list-none cursor-pointer text-xs font-semibold text-gray-600 text-center px-2 py-1 rounded-md border border-gray-200 ${ACTIVITIES_FOCUS_RING}`}
-                >
-                  Mais
-                </summary>
-                <div className="mt-1 flex flex-col gap-1">
-                  <button
-                    type="button"
-                    disabled={rowBusy}
-                    onClick={() => onStatusChange(item, 'no_show', 'Não compareceu')}
-                    className={`${ROW_ACTION_BUTTON_CLASS} text-amber-900 bg-amber-50 border-amber-100 hover:bg-amber-100`}
-                  >
-                    Não veio
-                  </button>
-                  <button
-                    type="button"
-                    disabled={rowBusy}
-                    onClick={() => onStatusChange(item, 'canceled', 'Cancelar atividade')}
-                    className={`${ROW_ACTION_BUTTON_CLASS} text-red-800 bg-red-50 border-red-100 hover:bg-red-100`}
-                  >
-                    Cancelar
-                  </button>
-                </div>
-              </details>
-              <div className="hidden sm:flex sm:flex-col gap-1">
-                <button
-                  type="button"
-                  disabled={rowBusy}
-                  onClick={() => onStatusChange(item, 'no_show', 'Não compareceu')}
-                  className={`${ROW_ACTION_BUTTON_CLASS} text-amber-900 bg-amber-50 border-amber-100 hover:bg-amber-100`}
-                >
-                  Não veio
-                </button>
-                <button
-                  type="button"
-                  disabled={rowBusy}
-                  onClick={() => onStatusChange(item, 'canceled', 'Cancelar atividade')}
-                  className={`${ROW_ACTION_BUTTON_CLASS} text-red-800 bg-red-50 border-red-100 hover:bg-red-100`}
-                >
-                  Cancelar
-                </button>
-              </div>
-            </>
-          ) : null}
         </div>
       ) : null}
     </li>

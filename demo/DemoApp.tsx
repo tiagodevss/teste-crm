@@ -77,7 +77,7 @@ function Demo({ repository }: { repository: DemoRepository }) {
     <aside className="demo-sidebar"><div className="demo-brand">CRM Contábil</div><nav aria-label="Navegação principal">
       <NavLink to="/indicadores"><LayoutDashboard size={20} aria-hidden />Indicadores</NavLink>
       <NavLink to="/crm"><Kanban size={20} aria-hidden />CRM / Funil</NavLink>
-      <NavLink to="/atividades"><CalendarDays size={20} aria-hidden />Atividades</NavLink>
+      <NavLink to="/atividades/agenda"><CalendarDays size={20} aria-hidden />Atividades</NavLink>
       <NavLink to="/clientes"><Users size={20} aria-hidden />Clientes</NavLink>
     </nav><footer className="mt-auto text-sm leading-relaxed text-slate-300">Ambiente demonstrativo<br />Dados fictícios e locais<br /><span className="text-xs">Referência: {reference}</span></footer></aside>
     <div className="demo-main"><header className="demo-toolbar"><div><strong className="text-sm">CRM Contábil</strong><p className="demo-note">Sem conexão com a operação real</p></div><div className="flex flex-wrap gap-2">

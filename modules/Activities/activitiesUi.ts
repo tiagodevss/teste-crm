@@ -17,11 +17,11 @@ export const ACTIVITIES_TAB_PANEL_IDS: Record<ActivitiesTab, string> = {
 
 export function activitiesTabClass(active: boolean): string {
   return [
-    'relative px-4 py-2 text-sm font-semibold rounded-lg transition-colors',
+    'relative px-4 py-2 text-sm font-semibold rounded-lg transition-all',
     ACTIVITIES_FOCUS_RING,
     active
-      ? 'bg-gray-100 text-gray-900 shadow-sm'
-      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50',
+      ? 'bg-blue-50 text-blue-700 shadow-sm ring-1 ring-inset ring-blue-100'
+      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50',
   ].join(' ');
 }
 
@@ -34,8 +34,8 @@ export const APPOINTMENT_TYPE_CHIP_CLASS: Record<string, string> = {
 };
 
 export const PRIMARY_BUTTON_CLASS = [
-  'inline-flex items-center gap-2 px-4 py-2 bg-salesforce-blue text-white rounded-lg',
-  'text-sm font-medium hover:bg-salesforce-hover shadow-sm transition-colors',
+  'inline-flex items-center justify-center gap-2 min-h-[40px] px-4 py-2 bg-salesforce-blue text-white rounded-lg',
+  'text-sm font-semibold hover:bg-salesforce-hover shadow-sm transition-colors disabled:opacity-60',
   ACTIVITIES_FOCUS_RING,
 ].join(' ');
 
@@ -46,7 +46,7 @@ export const COMPACT_PRIMARY_BUTTON_CLASS = [
 ].join(' ');
 
 export const ROW_ACTION_BUTTON_CLASS = [
-  'inline-flex items-center justify-center gap-1 px-2.5 py-2 min-h-[44px] text-xs font-semibold',
+  'inline-flex items-center justify-center gap-1.5 px-3 py-2 min-h-[40px] text-xs font-semibold',
   'rounded-lg border transition-colors disabled:opacity-50',
   ACTIVITIES_FOCUS_RING,
 ].join(' ');
