@@ -1,0 +1,73 @@
+name: Validate accounting-only demonstration
+on:
+  push:
+    branches: [feat/accounting-only-demo]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: accounting-validation
+  cancel-in-progress: true
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/feat/accounting-only-demo'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DEMO_BASE_PATH: /teste-crm/
+    steps:
+      - uses: actions/checkout@v4
+      - name: Materialize reviewed source changes
+        run: |
+          if [ -f .accounting-validation/applied ]; then exit 0; fi
+          python .accounting-validation/apply.py
+          touch .accounting-validation/applied
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat: accounting-only identity and three independent pipelines with regression coverage'
+          git push origin HEAD:feat/accounting-only-demo
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - name: Compile Pages application
+        id: build
+        run: npm run build:pages
+      - run: python -m pip install playwright==1.57.0
+      - name: Install browser
+        id: browser
+        run: python -m playwright install --with-deps chromium
+      - name: Presentation journey
+        run: npm run test:demo:browser
+      - name: Full accounting regression
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.browser.outcome == 'success' }}
+        run: npm run test:demo:audit
+      - name: Pages and existing component regressions
+        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.browser.outcome == 'success' }}
+        run: |
+          npm run test:pages
+          node tests/browser/build.mjs
+          python tests/browser/test_feedback.py
+      - name: Preserve exact source
+        if: always()
+        run: |
+          mkdir -p validation
+          git archive --format=zip HEAD -o validation/source.zip
+          git rev-parse HEAD > validation/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accounting-validation
+          path: |
+            validation/
+            audit-results/
+            demo-test-results/
+            node_modules/.cache/feedback-browser/*.png
+          retention-days: 7
