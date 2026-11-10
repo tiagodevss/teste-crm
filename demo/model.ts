@@ -54,7 +54,11 @@ export function decorateAppointment(db: DemoDatabase, appointment: LeadAppointme
 export function decorateLead(db: DemoDatabase, lead: DemoLead, now = new Date()): DemoLead {
   const appointments = db.appointments.filter(a => a.leadId === lead.id).sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
   const next = appointments.find(a => a.status === 'scheduled');
-  return { ...lead, owner: USERS.find(u => u.id === lead.ownerUserId), responsibleUserId: lead.ownerUserId, slaStatus: sla(lead, now), temperature: getLeadTemperature({ ...lead, temperature: undefined, slaStatus: sla(lead, now) }, now.getTime()), appointments: appointments.map(a => decorateAppointment(db, a)), nextAppointmentAt: next?.scheduledAt, nextAppointmentType: next?.type, nextAppointmentStatus: next?.status };
+  // Expose a single canonical fee in both the detail form and numeric indicators.
+  const feeField = initialFields(getPipe(lead.pipeId)).find(field => field.key === 'honorarios');
+  const customFields = (lead.customFields || []).filter(field => field.key !== 'honorarios');
+  if (feeField) customFields.push({ key: feeField.key, label: feeField.label, type: 'currency', stage: getPipe(lead.pipeId).steps[0].name, value: lead.value });
+  return { ...lead, customFields, owner: USERS.find(u => u.id === lead.ownerUserId), responsibleUserId: lead.ownerUserId, slaStatus: sla(lead, now), temperature: getLeadTemperature({ ...lead, temperature: undefined, slaStatus: sla(lead, now) }, now.getTime()), appointments: appointments.map(a => decorateAppointment(db, a)), nextAppointmentAt: next?.scheduledAt, nextAppointmentType: next?.type, nextAppointmentStatus: next?.status };
 }
 export function filterLeads(db: DemoDatabase, query: URLSearchParams, now = new Date()): DemoLead[] {
   return db.leads.filter(l => {
@@ -117,6 +121,12 @@ function updateLead(db: DemoDatabase, lead: DemoLead, body: Record<string, any>,
   if ('partnerId' in body) { required(!body.partnerId || PARTNERS.some(p => p.id === body.partnerId), 'Parceiro inv\u00e1lido.'); lead.partnerId = body.partnerId || undefined; }
   if (Array.isArray(body.customFields)) {
     required(body.customFields.length <= 30 && body.customFields.every((f: any) => f && typeof f.key === 'string' && (f.value == null || ['string','number','boolean'].includes(typeof f.value))), 'Campos personalizados inv\u00e1lidos.');
+    const fee = body.customFields.find((field: any) => field.key === 'honorarios');
+    if (!('value' in body) && fee?.value != null && String(fee.value).trim() !== '') {
+      const amount = Number(fee.value);
+      required(Number.isFinite(amount) && amount >= 0, 'Honorários inválidos.');
+      lead.value = amount;
+    }
     lead.customFields = body.customFields.filter((f: any) => f.value != null && initialFields(pipe).some(p => p.key === f.key)).map((f: any) => { const field = initialFields(pipe).find(p => p.key === f.key)!; return { key: f.key, label: field.label, type: field.type as any, stage: pipe.steps[0].name, value: f.value }; });
   }
   if (body.stage && body.stage !== lead.stage) {

@@ -275,6 +275,12 @@ def accounting_brand_and_pipes(p,c):
     for name in ['Contabilidade','Abertura de Empresas','Onboarding Contábil']:expect(p.get_by_role('heading',name=name,exact=True)).to_be_visible()
     expect(p.get_by_role('button',name='Criar novo funil',exact=True)).to_have_count(0)
     go(p,'/crm/financeira-demo');expect(p.get_by_role('heading',name='Fluxos de Trabalho',exact=True)).to_be_visible()
+    for title,slug in [('Contabilidade','contabilidade-demo'),('Abertura de Empresas','abertura-empresas-demo'),('Onboarding Contábil','onboarding-contabil-demo')]:
+        p.get_by_role('button').filter(has=p.get_by_role('heading',name=title,exact=True)).click()
+        expect(p).to_have_url(re.compile('/crm/'+slug+'(?:\\?|$)'))
+        expect(p.get_by_role('button',name='Novo Lead',exact=True)).to_be_visible()
+        p.get_by_role('link',name='CRM / Funil',exact=True).click()
+        expect(p.get_by_role('heading',name='Fluxos de Trabalho',exact=True)).to_be_visible()
     capture(p,'accounting-three-pipeline-picker')
     go(p,'/indicadores/financeira');check(p.url.endswith('/indicadores/geral'),'Retired route did not redirect')
     p.get_by_role('button',name='Sair da demonstração').click();expect(p.get_by_role('button',name='Entrar na demonstração')).to_be_visible()

@@ -108,3 +108,24 @@ test('migration handles full storage without discarding previous data or unrelat
  assert.throws(()=>createRepository(storage,()=>NOW),e=>e.status===507);
  assert.equal(storage.getItem(STORAGE_KEY),before);assert.equal(storage.getItem(DEMO_PREFERENCES_KEY),'previous');
 });
+
+test('contracted fee remains consistent across form edits, transitions, persistence and indicators',()=>{
+ const {repo,request,storage}=setup();
+ for(const pipe of PIPES){
+  const original=repo.snapshot().leads.find(l=>l.pipeId===pipe.id && l.status===STATUS.won);
+  let row=request('GET',`/leads/${original.id}`);
+  assert.equal(row.customFields.find(f=>f.key==='honorarios').value,row.value);
+  const before=request('GET','/indicators/general').summary.totalRevenue;
+  const fields=row.customFields.map(f=>f.key==='honorarios'?{...f,value:2750}:f);
+  row=request('PUT',`/leads/${row.id}`,{customFields:fields});
+  assert.equal(row.value,2750);assert.equal(row.demoRevenue,2750);
+  assert.equal(request('GET','/indicators/general').summary.totalRevenue,before-original.value+2750);
+  request('PATCH',`/clients/${row.id}`,{value:3000});
+  row=request('GET',`/clients/${row.id}`);
+  assert.equal(row.customFields.find(f=>f.key==='honorarios').value,3000);
+  assert.equal(createRepository(storage,()=>NOW).snapshot().leads.find(l=>l.id===row.id).value,3000);
+  const unchanged=repo.snapshot();
+  assert.throws(()=>request('PUT',`/leads/${row.id}`,{customFields:[{key:'honorarios',value:-1}]}),e=>e.status===400);
+  assert.deepEqual(repo.snapshot(),unchanged);
+ }
+});
