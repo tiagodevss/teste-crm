@@ -19,11 +19,11 @@ export default function IndicatorLeads() {
   const result = useQuery({ queryKey: ['demo-indicator-leads', query.toString()], queryFn: async () => (await api.get<PaginatedResponse<Lead>>(`/leads?${query}`)).data });
   const users = useQuery({ queryKey: ['demo-indicator-users'], queryFn: async () => (await api.get<PaginatedResponse<UserProfile>>('/users?limit=200')).data.data });
   const operation = params.get('operation');
-  const label = operation === 'accounting' ? 'Contabilidade' : operation === 'financial' ? 'Financeira' : 'Geral';
+  const label = operation === 'accounting' ? 'Contabilidade' : 'Geral';
   const owner = users.data?.find(u => u.id === params.get('ownerUserId'))?.name;
   const update = (values: Record<string, string>) => { const next = new URLSearchParams(params); Object.entries(values).forEach(([k, v]) => v ? next.set(k, v) : next.delete(k)); setParams(next); };
   return <section className="space-y-5">
-    <NavLink to={`/indicadores/${operation === 'accounting' ? 'contabilidade' : operation === 'financial' ? 'financeira' : 'geral'}`} className="inline-flex items-center gap-2 text-sm text-salesforce-blue font-semibold"><ArrowLeft size={16} aria-hidden />Voltar aos indicadores</NavLink>
+    <NavLink to={`/indicadores/${operation === 'accounting' ? 'contabilidade' : 'geral'}`} className="inline-flex items-center gap-2 text-sm text-salesforce-blue font-semibold"><ArrowLeft size={16} aria-hidden />Voltar aos indicadores</NavLink>
     <div><h1 className="text-2xl font-bold">Registros do indicador</h1><p className="text-sm text-gray-600 mt-2">{label} - Mesma base utilizada no painel. Clique em um nome para abrir o atendimento.</p></div>
     <div className="text-sm text-gray-700 leading-relaxed" aria-label="Filtros do indicador">
       Período de criação: {params.get('dateFrom') ? formatDate(params.get('dateFrom')!) : 'Início'} a {params.get('dateTo') ? formatDate(params.get('dateTo')!) : 'Hoje'}.

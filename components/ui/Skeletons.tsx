@@ -125,7 +125,7 @@ export const DashboardSkeleton = () => (
     </div>
 );
 
-// Padrão para Financeiro (Gráficos)
+// Esqueleto para gráficos
 export const FinanceSkeleton = () => (
     <div className="space-y-6 p-1 animate-fade-in">
         <Skeleton className="h-16 w-full rounded-lg" />

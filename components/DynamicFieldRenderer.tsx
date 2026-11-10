@@ -5,7 +5,6 @@ import { FieldConfig } from '../types';
 import { FormInput, FormSelect, FormDatePicker } from './ui/FormInputs';
 import { AttachmentLink } from './AttachmentLink';
 import { joinAttachmentValue, splitAttachmentValue } from '../utils/leadCustomFields';
-import { MunicipioAutocomplete } from '../modules/Financeira/components/MunicipioAutocomplete';
 import {
     getYesNoComplementKey,
     isYesAnswer,
@@ -30,23 +29,7 @@ async function uploadFile(file: File): Promise<{ url: string }> {
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
-async function uploadFinanceira(
-    file: File,
-    context: { pipeId: string; leadId?: string; fieldKey?: string },
-): Promise<{ url: string }> {
-    const { uploadFinanceiraFile } = await import('../lib/upload');
-    return uploadFinanceiraFile(file, context);
-}
-
-/** Contexto de upload dos funis financeiros: anexos vão para o armazenamento privado. */
-export interface FinanceiraUploadContext {
-    pipeId: string;
-    leadId?: string;
-}
-
 export interface DynamicFieldRendererProps {
-    /** Quando informado, anexos são enviados para o armazenamento privado financeiro. */
-    financeiraUploadContext?: FinanceiraUploadContext;
     field: FieldConfig;
     register: UseFormRegister<Record<string, unknown>>;
     control: Control<Record<string, unknown>>;
@@ -65,7 +48,6 @@ export function DynamicFieldRenderer({
     setValue,
     uploadingAttachmentKey,
     setUploadingAttachmentKey,
-    financeiraUploadContext,
 }: DynamicFieldRendererProps) {
     const attachmentNames = useRef(new Map<string, string>());
     const resolvedHelpText = resolveLeadFormFieldHelpText(field);
@@ -186,26 +168,6 @@ export function DynamicFieldRenderer({
 
         case 'text':
         case 'url':
-            if (field.type === 'text' && field.uiConfig?.widget === 'municipio') {
-                return (
-                    <div className={fieldInputWidthClass(field)}>
-                        <Controller
-                            name={field.key}
-                            control={control}
-                            render={({ field: f }) => (
-                                <MunicipioAutocomplete
-                                    label={field.label}
-                                    value={typeof f.value === 'string' ? f.value : ''}
-                                    onChange={(value) => f.onChange(value)}
-                                    error={errors[field.key]?.message ? String(errors[field.key]?.message) : undefined}
-                                    required={field.required}
-                                />
-                            )}
-                        />
-                        {helpText}
-                    </div>
-                );
-            }
             return (
                 <div className={fieldInputWidthClass(field)}>
                     <FormInput
@@ -688,12 +650,7 @@ export function DynamicFieldRenderer({
                                 try {
                                     for (const file of valid) {
                                         try {
-                                            const result = financeiraUploadContext
-                                                ? await uploadFinanceira(file, {
-                                                      ...financeiraUploadContext,
-                                                      fieldKey: field.key,
-                                                  })
-                                                : await uploadFile(file);
+                                            const result = await uploadFile(file);
                                             next.push(result.url);
                                             attachmentNames.current.set(result.url, file.name);
                                         } catch {
@@ -732,11 +689,7 @@ export function DynamicFieldRenderer({
                                             multiple
                                             className="hidden"
                                             disabled={isUploading}
-                                            accept={
-                                                financeiraUploadContext
-                                                    ? '.pdf,.jpg,.jpeg,.png'
-                                                    : '.pdf,.jpg,.jpeg,.png,.doc,.docx,.xlsx,.xls,.csv'
-                                            }
+                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xlsx,.xls,.csv"
                                             onChange={(e) => void handleFiles(e.target)}
                                         />
                                     </label>

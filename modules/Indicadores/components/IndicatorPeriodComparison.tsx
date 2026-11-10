@@ -3,16 +3,15 @@ import { api } from '../../../lib/axios';
 import { formatCurrency, formatDate } from '../../../utils/formatters';
 import { indicatorQuery, type IndicatorDateRange } from '../../../lib/dashboardPeriods';
 interface Props {
-  operation: 'general' | 'accounting' | 'financial';
+  operation: 'general' | 'accounting';
   primary: IndicatorDateRange;
   comparison?: IndicatorDateRange;
   responsibleId: string;
   summary: object;
 }
 const metrics = {
-  general: [['totalLeads', 'Leads totais', 'count'], ['totalRevenue', 'Receita total fechada', 'money'], ['conversionRate', 'Conversão geral', 'rate'], ['criticalAlerts', 'Alertas críticos', 'count']],
+  general: [['totalLeads', 'Leads totais', 'count'], ['totalRevenue', 'Honorários contratados', 'money'], ['conversionRate', 'Conversão geral', 'rate'], ['criticalAlerts', 'Alertas críticos', 'count']],
   accounting: [['leadsReceived', 'Leads recebidos', 'count'], ['clientsActivated', 'Clientes ativados', 'count'], ['recurringRevenue', 'Receita recorrente', 'money'], ['conversionRate', 'Conversão', 'rate']],
-  financial: [['financialLeads', 'Leads financeiros', 'count'], ['releases', 'Liberações', 'count'], ['releasedValue', 'Valor liberado', 'money'], ['approvalRate', 'Taxa de aprovação', 'rate']],
 } as const;
 function formatted(value: number, kind: string) {
   return kind === 'money' ? formatCurrency(value) : kind === 'rate' ? `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%` : value.toLocaleString('pt-BR');

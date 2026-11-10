@@ -15,7 +15,7 @@ export interface ConversionModalProps {
     errors: FieldErrors<ConversionFormData>;
     onSubmit: (e?: React.BaseSyntheticEvent) => Promise<void>;
     onClose: () => void;
-    /** Funis financeiros: observação de movimentação não é solicitada. */
+
     hideObservation?: boolean;
 }
 
@@ -31,7 +31,7 @@ export function ConversionModal({
     if (!lead || !isOpen) return null;
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} contentClassName="max-w-4xl w-full min-w-[36rem] max-h-[90vh] overflow-hidden flex flex-col">
+        <Modal isOpen={isOpen} onClose={onClose} contentClassName="max-w-4xl w-full min-w-0 max-h-[90vh] overflow-hidden flex flex-col">
             <form onSubmit={onSubmit} className="flex flex-col flex-1 min-h-0">
                 <div className="flex-shrink-0 border-b border-gray-100 bg-gray-50">
                     <div className="px-6 py-4 flex justify-between items-start gap-4">

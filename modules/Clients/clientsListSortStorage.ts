@@ -1,6 +1,6 @@
 import { SortOrder } from '../../types';
 
-export const CLIENTS_LIST_SORT_STORAGE_KEY = 'wmsempresarial.clients.listSort';
+export const CLIENTS_LIST_SORT_STORAGE_KEY = 'contabil.clients.listSort';
 
 /** Espelha `ALLOWED_SORT_FIELDS` em `backend/src/clients/services/list.service.ts`. */
 export const CLIENTS_LIST_ALLOWED_SORT_BY = [

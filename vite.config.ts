@@ -15,7 +15,7 @@ const policy = [
 function demoEntry(): Plugin {
   let development = false;
   return {
-    name: 'wms-isolated-demo-entry',
+    name: 'accounting-isolated-demo-entry',
     configResolved(config) { development = config.command === 'serve'; },
     transformIndexHtml: {
       order: 'pre',

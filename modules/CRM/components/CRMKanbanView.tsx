@@ -44,7 +44,7 @@ export interface CRMKanbanViewProps {
     filterSlot?: ReactNode;
 }
 
-const labelsMinimizedStorageKey = (pipeId: PipeId) => `wms:crm:kanban:labels-minimized:${pipeId}`;
+const labelsMinimizedStorageKey = (pipeId: PipeId) => `contabil:crm:kanban:labels-minimized:${pipeId}`;
 
 function readLabelsMinimizedPreference(pipeId: PipeId): boolean {
     try {

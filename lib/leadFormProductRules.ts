@@ -31,7 +31,7 @@ const DEFAULT_RULES: LeadFormStep1Rules = {
 };
 
 const ABERTURA_SUCCESS_MESSAGE =
-  'Lead salvo com sucesso! Por favor, oriente o cliente a enviar os documentos necessários para o e-mail: atendimento@wmsempresarial.com.br.';
+  'Solicitação demonstrativa cadastrada. A próxima etapa é validar os documentos; nenhum envio real será realizado.';
 
 function matchesImpostoRendaComum(name: string): boolean {
   const n = name.toLowerCase();

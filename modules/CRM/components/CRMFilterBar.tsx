@@ -27,8 +27,8 @@ export interface CRMFilterBarProps {
     productIdFilter: string;
     onProductIdFilterChange: (value: string) => void;
     products: { id: string; name: string }[];
-    clientWmsFilter: '' | 'yes' | 'no';
-    onClientWmsFilterChange: (value: '' | 'yes' | 'no') => void;
+    existingClientFilter: '' | 'yes' | 'no';
+    onExistingClientFilterChange: (value: '' | 'yes' | 'no') => void;
 }
 
 const selectClass =
@@ -48,7 +48,7 @@ export function CRMFilterBar(props: CRMFilterBarProps) {
         if (props.campaignIdFilter) n += 1;
         if (props.partnerIdFilter) n += 1;
         if (props.productIdFilter) n += 1;
-        if (props.clientWmsFilter) n += 1;
+        if (props.existingClientFilter) n += 1;
         return n;
     }, [props]);
 
@@ -62,7 +62,7 @@ export function CRMFilterBar(props: CRMFilterBarProps) {
         props.onCampaignIdFilterChange('');
         props.onPartnerIdFilterChange('');
         props.onProductIdFilterChange('');
-        props.onClientWmsFilterChange('');
+        props.onExistingClientFilterChange('');
     };
 
     return (
@@ -232,20 +232,20 @@ export function CRMFilterBar(props: CRMFilterBarProps) {
                         ))}
                     </select>
                     <select
-                        value={props.clientWmsFilter}
+                        value={props.existingClientFilter}
                         onChange={(e) =>
-                            props.onClientWmsFilterChange(
+                            props.onExistingClientFilterChange(
                                 e.target.value === 'yes' || e.target.value === 'no'
                                     ? (e.target.value as 'yes' | 'no')
                                     : '',
                             )
                         }
                         className={selectClass}
-                        aria-label="Cliente WMS"
+                        aria-label="Cliente do escritório"
                     >
-                        <option value="">Cliente WMS: todos</option>
-                        <option value="yes">Cliente WMS: sim</option>
-                        <option value="no">Cliente WMS: não</option>
+                        <option value="">Cliente do escritório: todos</option>
+                        <option value="yes">Cliente do escritório: sim</option>
+                        <option value="no">Cliente do escritório: não</option>
                     </select>
                 </div>
             )}

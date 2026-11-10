@@ -1,6 +1,6 @@
 import { isDemo, DEMO_AUTH_KEY } from '../../../config/demo';
 
-export const AUTH_STORAGE_KEY = isDemo ? DEMO_AUTH_KEY : 'wms-auth-storage';
+export const AUTH_STORAGE_KEY = isDemo ? DEMO_AUTH_KEY : 'contabil-auth-storage';
 
 // Refresh the access token before it expires to avoid 401 storms.
 export const SESSION_REFRESH_BUFFER_MS = 60 * 1000; // 1 minute before expiry.

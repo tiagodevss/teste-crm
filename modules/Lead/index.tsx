@@ -49,14 +49,7 @@ import {
 
 import { LeadLossDialog } from '../../components/crm/LeadLossDialog';
 import { CommercialFeedbackPanel } from './components/CommercialFeedbackPanel';
-import { FinancialJourneyExternalSection } from './components/FinancialJourneyExternalSection';
-import { useFinanceiraPipe } from '../../lib/financeira-pipes';
 import { buildStageTransitionFields } from '../../lib/stage-transition-fields';
-import { classifyRepasseTransition } from '../../lib/financeira-transitions';
-import { advanceSiopi } from '../../lib/financeira-api';
-import { FinanceiraStagePanel } from '../Financeira/components/FinanceiraStagePanel';
-import { FinanceiraDocumentSharePanel } from '../Financeira/components/FinanceiraDocumentSharePanel';
-import { FinanceiraLegacyDataSection } from '../Financeira/components/FinanceiraLegacyDataSection';
 
 const POST_SALE_CHECKLIST_CUSTOM_FIELD_KEY = 'post_sale_initial_checklist';
 
@@ -162,14 +155,13 @@ export const LeadDetail: React.FC = () => {
         if (isEditLeadModalOpen) setEditUploadingAttachmentKey(null);
     }, [isEditLeadModalOpen]);
 
-    const fin = useFinanceiraPipe(lead?.pipeId);
     const standardStageChange = useMemo(() => {
-        if (!lead || !stageChangeModal || fin.isFinanceira) return null;
+        if (!lead || !stageChangeModal) return null;
         return buildStageTransitionFields(
             getStageFields(lead.pipeId, lead.stage),
             getStageFields(lead.pipeId, stageChangeModal.targetStage),
         );
-    }, [lead, stageChangeModal, fin.isFinanceira, getStageFields]);
+    }, [lead, stageChangeModal, getStageFields]);
     const stageChangeFields = useMemo(
         () => standardStageChange?.fields ?? [],
         [standardStageChange],
@@ -208,8 +200,8 @@ export const LeadDetail: React.FC = () => {
         return options;
     }, [campaigns, lead?.campaignId]);
     const stageChangeSchema = useMemo(
-        () => buildDynamicSchema(stageChangeFields, undefined, { requireKanbanObservation: !fin.isFinanceira }),
-        [stageChangeFields, fin.isFinanceira],
+        () => buildDynamicSchema(stageChangeFields, undefined, { requireKanbanObservation: true }),
+        [stageChangeFields],
     );
     const {
         register: registerStageChange,
@@ -280,23 +272,7 @@ export const LeadDetail: React.FC = () => {
 
     const handleAdvanceToStage = async (targetStage: string) => {
         if (!lead) return;
-        if (fin.isRepasse) {
-            const kind = classifyRepasseTransition(lead, targetStage);
-            if (kind === 'siopi') {
-                setIsAdvancing(true);
-                try {
-                    const result = await advanceSiopi(lead.id, lead.updatedAt);
-                    toast.success(`SIOPI concluída. Card movido para "${result.toStage}".`);
-                    refreshLeadIfFetchedById();
-                } catch (error) {
-                    toast.error(getApiErrorMessage(error, 'Não foi possível concluir a SIOPI.'));
-                } finally {
-                    setIsAdvancing(false);
-                }
-                return;
-            }
-        }
-        if (!fin.isRepasse && getStageKind(lead.pipeId, targetStage) === 'loss') { setLossTarget({ stage: targetStage }); return; }
+        if (getStageKind(lead.pipeId, targetStage) === 'loss') { setLossTarget({ stage: targetStage }); return; }
         const allowed = lead.availableTransitions && lead.availableTransitions.length > 0
             ? lead.availableTransitions
                 .filter((transition) => !(transition.autoExecute || transition.kind === 'automatic'))
@@ -317,24 +293,8 @@ export const LeadDetail: React.FC = () => {
             return;
         }
         const shouldCreateClient = pipeDetailByPipeId[lead.pipeId]?.createClientOnFinalStage !== false;
-        if (!fin.isFinanceira && getStageKind(lead.pipeId, targetStage) === 'win' && shouldCreateClient) {
+        if (getStageKind(lead.pipeId, targetStage) === 'win' && shouldCreateClient) {
             navigate(getCRMPipePath(lead.pipeId), { state: { openConversionLeadId: lead.id, conversionTargetStage: targetStage } });
-            return;
-        }
-        // Nos pipes financeiros, avançar só altera a etapa; os campos são editados no detalhe do lead.
-        if (fin.isFinanceira) {
-            setIsAdvancing(true);
-            try {
-                await updateLead(lead.id, {
-                    stage: targetStage,
-                    ...(getStageKind(lead.pipeId, targetStage) === 'win' ? { status: LeadStatus.CLIENTE } : {}),
-                });
-                refreshLeadIfFetchedById();
-            } catch {
-                // toast de erro exibido pela store
-            } finally {
-                setIsAdvancing(false);
-            }
             return;
         }
         const unitStageFields = buildStageTransitionFields(
@@ -410,44 +370,6 @@ export const LeadDetail: React.FC = () => {
                     e.key !== POST_SALE_CHECKLIST_CUSTOM_FIELD_KEY,
             ),
         [normalizedCustomFields, initialKeysSet, stageConfigKeys],
-    );
-
-    /** Chaves aposentadas (`isActive=false`) e que não estão ativas em nenhum outro lugar do pipe. */
-    const retiredKeys = useMemo(() => {
-        const retired = new Set<string>();
-        if (!fin.isFinanceira || !lead) return retired;
-        const detail = pipeDetailByPipeId[lead.pipeId];
-        if (!detail) return retired;
-        const active = new Set<string>();
-        const consider = (field: { key: string; isActive?: boolean }) => {
-            if (field.isActive === false) retired.add(field.key);
-            else active.add(field.key);
-        };
-        detail.fields.forEach(consider);
-        detail.steps.forEach((step) => step.fields.forEach(consider));
-        active.forEach((key) => retired.delete(key));
-        return retired;
-    }, [fin.isFinanceira, lead, pipeDetailByPipeId]);
-    const retiredEntries = useMemo(
-        () => normalizedCustomFields.filter((entry) => retiredKeys.has(entry.key)),
-        [normalizedCustomFields, retiredKeys],
-    );
-    const visibleByStageData = useMemo(
-        () =>
-            retiredKeys.size === 0
-                ? byStageData
-                : byStageData
-                      .map((group) => ({ ...group, fields: group.fields.filter((field) => !retiredKeys.has(field.key)) }))
-                      .filter((group) => group.fields.length > 0),
-        [byStageData, retiredKeys],
-    );
-    const visibleOtherCustomFields = useMemo(
-        () => otherCustomFields.filter((entry) => !retiredKeys.has(entry.key)),
-        [otherCustomFields, retiredKeys],
-    );
-    const currentStageFields = useMemo(
-        () => (lead && fin.isFinanceira ? getStageFields(lead.pipeId, lead.stage) : []),
-        [lead, fin.isFinanceira, getStageFields, pipeDetailByPipeId],
     );
 
     useEffect(() => { if (lead?.id && lead.id !== prevLeadIdRef.current) { prevLeadIdRef.current = lead.id; setOpenStages(new Set(byStageData.map((b) => b.stageName))); } }, [lead?.id, byStageData]);
@@ -542,39 +464,13 @@ export const LeadDetail: React.FC = () => {
                     campaigns={campaigns}
                     partners={partners}
                     getStatusColor={getStatusColor}
-                    financeiraKind={fin.isCredito ? 'credito' : fin.isRepasse ? 'repasse' : null}
                     />
                 </div>
 
                 <div className="space-y-5 min-w-0">
-                    {!fin.isFinanceira && (
-                        <CommercialFeedbackPanel key={lead.id} leadId={lead.id} revision={`${lead.updatedAt ?? ''}:${feedbackRevision}`}
+                    <CommercialFeedbackPanel key={lead.id} leadId={lead.id} revision={`${lead.updatedAt ?? ''}:${feedbackRevision}`}
                             onSaved={() => { refreshLeadIfFetchedById(); }}
                             onRegisterLoss={() => setLossTarget({})} />
-                    )}
-                    {fin.isFinanceira && (
-                        <FinanceiraStagePanel
-                            lead={lead}
-                            fields={currentStageFields}
-                            isRepasse={fin.isRepasse}
-                            canEdit={(hasActionPermission('crm.edit') || hasActionPermission('crm.manage')) && canEditPipe(lead.pipeId)}
-                            onSaved={() => { refreshLeadIfFetchedById(); }}
-                        />
-                    )}
-                    {fin.isCredito && lead.stage === 'SIMULAÇÃO' && (
-                        <FinanceiraDocumentSharePanel
-                            lead={lead}
-                            kind="SIMULACAO"
-                            canEdit={(hasActionPermission('crm.edit') || hasActionPermission('crm.manage')) && canEditPipe(lead.pipeId)}
-                        />
-                    )}
-                    {fin.isRepasse && lead.stage === 'ENGENHARIA' && (
-                        <FinanceiraDocumentSharePanel
-                            lead={lead}
-                            kind="BOLETO"
-                            canEdit={(hasActionPermission('crm.edit') || hasActionPermission('crm.manage')) && canEditPipe(lead.pipeId)}
-                        />
-                    )}
                     {!isDemo && <LeadFlowAnomalySection
                         lead={lead}
                         canEdit={hasActionPermission('crm.edit') || hasActionPermission('crm.manage')}
@@ -583,7 +479,6 @@ export const LeadDetail: React.FC = () => {
                             refreshLeadIfFetchedById();
                         }}
                     />}
-                    {!isDemo && <FinancialJourneyExternalSection leadId={lead.id} />}
                     <LeadTimelineSection
                         newComment={newComment}
                         onCommentChange={setNewComment}
@@ -606,19 +501,18 @@ export const LeadDetail: React.FC = () => {
                         isRegisteringContactAttempt={isRegisteringContactAttempt}
                         comments={lead.comments ?? []}
                         timeline={lead.timeline ?? []}
-                        showCommercialContactForm={!fin.isFinanceira}
+                        showCommercialContactForm={true}
                     />
                     <LeadCustomFieldsSection
                         initialFieldsData={initialFieldsData}
-                        byStageData={visibleByStageData}
-                        otherCustomFields={visibleOtherCustomFields}
+                        byStageData={byStageData}
+                        otherCustomFields={otherCustomFields}
                         openStages={openStages}
                         onToggleStage={toggleStage}
                         getTypeLabel={getTypeLabel}
                         formatCustomFieldValue={formatCustomFieldValue}
                         renderCustomFieldValue={renderCustomFieldValue}
                     />
-                    {fin.isFinanceira && <FinanceiraLegacyDataSection entries={retiredEntries} />}
                 </div>
             </div>
             {lossTarget && <LeadLossDialog key={lead.id} lead={lead} targetStage={lossTarget.stage} onClose={() => setLossTarget(null)}
@@ -630,7 +524,7 @@ export const LeadDetail: React.FC = () => {
                 register={forms.editForm.register}
                 control={forms.editForm.control}
                 errors={forms.editForm.errors}
-                products={products}
+                products={products.filter(product => product.pipeId === lead.pipeId)}
                 campaigns={editCampaignOptions}
                 partners={partners}
                 users={usersList}
@@ -638,7 +532,7 @@ export const LeadDetail: React.FC = () => {
                 uploadingAttachmentKey={editUploadingAttachmentKey}
                 setUploadingAttachmentKey={setEditUploadingAttachmentKey}
             />
-            {!fin.isFinanceira && <LeadStageChangeModal isOpen={!!stageChangeModal} lead={lead} targetStage={stageChangeModal?.targetStage ?? null} fields={stageChangeFields} register={registerStageChange} control={controlStageChange} setValue={setValueStageChange} errors={errorsStageChange} uploadingAttachmentKey={uploadingAttachmentKey} setUploadingAttachmentKey={setUploadingAttachmentKey} onConfirm={handleSubmitStageChange(onConfirmStageChange)} onClose={() => setStageChangeModal(null)} hideObservation={false} />}
+            <LeadStageChangeModal isOpen={!!stageChangeModal} lead={lead} targetStage={stageChangeModal?.targetStage ?? null} fields={stageChangeFields} register={registerStageChange} control={controlStageChange} setValue={setValueStageChange} errors={errorsStageChange} uploadingAttachmentKey={uploadingAttachmentKey} setUploadingAttachmentKey={setUploadingAttachmentKey} onConfirm={handleSubmitStageChange(onConfirmStageChange)} onClose={() => setStageChangeModal(null)} hideObservation={false} />
         </div>
     );
 };

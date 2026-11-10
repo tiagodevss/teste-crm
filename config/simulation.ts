@@ -5,7 +5,6 @@ const CRITICAL_VIEWS: View[] = [
   'indicadores',
   'crm',
   'clients',
-  'finance',
   'goals',
   'campaigns',
   'users',

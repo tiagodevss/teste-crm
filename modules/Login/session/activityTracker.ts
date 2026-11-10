@@ -11,7 +11,7 @@ interface StopTrackingOptions {
 }
 
 class ActivityTracker {
-  private static readonly LEADER_LOCK_KEY = 'wms-activity-leader-lock';
+  private static readonly LEADER_LOCK_KEY = 'contabil-activity-leader-lock';
   private static readonly LEADER_LOCK_TTL_MS = ACTIVITY_HEARTBEAT_INTERVAL_MS * 3;
 
   private readonly activityEvents: Array<keyof WindowEventMap> = [

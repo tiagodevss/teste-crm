@@ -2,7 +2,7 @@ import React, { useEffect, useId, useState } from 'react';
 import { ChevronDown, CircleHelp } from 'lucide-react';
 import { ACTIVITIES_FOCUS_RING } from '../activitiesUi';
 
-const HELP_SEEN_KEY = 'wms-activities-help-seen';
+const HELP_SEEN_KEY = 'contabil-activities-help-seen';
 
 export function ActivitiesInlineHelp() {
   const [open, setOpen] = useState(false);

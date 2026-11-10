@@ -3,13 +3,13 @@ import { getLeadTemperature } from '../lib/lead-temperature.ts';
 import type { Lead, LeadAppointment, LeadTimelineEventType } from '../types';
 import type { CommercialFeedback } from '../lib/commercial-feedback';
 import type { DemoDatabase, DemoLead, DemoResponse, DemoPipe } from './types.ts';
-import { DemoError, ACCOUNTING_ID, FINANCIAL_ID, ADMIN_ID, DAY_MS, STATUS } from './types.ts';
+import { DemoError, ACCOUNTING_ID, OPENING_ID, ONBOARDING_ID, ADMIN_ID, DAY_MS, STATUS } from './types.ts';
 import { PIPES, PRODUCTS, USERS, PARTNERS, saoPauloDate } from './seed.ts';
 
 export const DEMO_LOGIN = 'demo@example.invalid';
 export const DEMO_PASSWORD = 'demonstracao-local';
-export const ACCESS_TOKEN = 'wms-demo-local-access';
-export const REFRESH_TOKEN = 'wms-demo-local-refresh';
+export const ACCESS_TOKEN = 'contabil-demo-local-access';
+export const REFRESH_TOKEN = 'contabil-demo-local-refresh';
 const tokens = () => ({ accessToken: ACCESS_TOKEN, refreshToken: REFRESH_TOKEN, expiresIn: 8 * 3600 });
 const isOpen = (l: DemoLead) => l.status !== STATUS.won && l.status !== STATUS.lost;
 const sum = (rows: DemoLead[], get: (lead: DemoLead) => number) => rows.reduce((n, lead) => n + get(lead), 0);
@@ -54,7 +54,11 @@ export function decorateAppointment(db: DemoDatabase, appointment: LeadAppointme
 export function decorateLead(db: DemoDatabase, lead: DemoLead, now = new Date()): DemoLead {
   const appointments = db.appointments.filter(a => a.leadId === lead.id).sort((a, b) => a.scheduledAt.localeCompare(b.scheduledAt));
   const next = appointments.find(a => a.status === 'scheduled');
-  return { ...lead, owner: USERS.find(u => u.id === lead.ownerUserId), responsibleUserId: lead.ownerUserId, slaStatus: sla(lead, now), temperature: getLeadTemperature({ ...lead, temperature: undefined, slaStatus: sla(lead, now) }, now.getTime()), appointments: appointments.map(a => decorateAppointment(db, a)), nextAppointmentAt: next?.scheduledAt, nextAppointmentType: next?.type, nextAppointmentStatus: next?.status };
+  // Expose a single canonical fee in both the detail form and numeric indicators.
+  const feeField = initialFields(getPipe(lead.pipeId)).find(field => field.key === 'honorarios');
+  const customFields = (lead.customFields || []).filter(field => field.key !== 'honorarios');
+  if (feeField) customFields.push({ key: feeField.key, label: feeField.label, type: 'currency', stage: getPipe(lead.pipeId).steps[0].name, value: lead.value });
+  return { ...lead, customFields, owner: USERS.find(u => u.id === lead.ownerUserId), responsibleUserId: lead.ownerUserId, slaStatus: sla(lead, now), temperature: getLeadTemperature({ ...lead, temperature: undefined, slaStatus: sla(lead, now) }, now.getTime()), appointments: appointments.map(a => decorateAppointment(db, a)), nextAppointmentAt: next?.scheduledAt, nextAppointmentType: next?.type, nextAppointmentStatus: next?.status };
 }
 export function filterLeads(db: DemoDatabase, query: URLSearchParams, now = new Date()): DemoLead[] {
   return db.leads.filter(l => {
@@ -66,8 +70,8 @@ export function filterLeads(db: DemoDatabase, query: URLSearchParams, now = new 
     if (query.get('responsibleUserId') && l.ownerUserId !== query.get('responsibleUserId')) return false;
     if (query.get('labelId') && !l.labels?.some(label => label.id === query.get('labelId'))) return false;
     if (query.get('hasImportDate') === 'true' && !l.importDate) return false;
-    if (query.get('clientWms') === 'yes' && l.status !== STATUS.won) return false;
-    if (query.get('clientWms') === 'no' && l.status === STATUS.won) return false;
+    if (query.get('existingClient') === 'yes' && l.status !== STATUS.won) return false;
+    if (query.get('existingClient') === 'no' && l.status === STATUS.won) return false;
     if (query.get('slaStatus') && sla(l, now) !== query.get('slaStatus')) return false;
     if (query.get('temperature') && query.get('temperature') !== getLeadTemperature({ ...l, temperature: undefined, slaStatus: sla(l, now) }, now.getTime())) return false;
     const field = query.get('dateField') === 'lastContactDate' ? 'lastContactDate' : query.get('dateField') === 'importDate' ? 'importDate' : 'createdAt';
@@ -117,6 +121,12 @@ function updateLead(db: DemoDatabase, lead: DemoLead, body: Record<string, any>,
   if ('partnerId' in body) { required(!body.partnerId || PARTNERS.some(p => p.id === body.partnerId), 'Parceiro inv\u00e1lido.'); lead.partnerId = body.partnerId || undefined; }
   if (Array.isArray(body.customFields)) {
     required(body.customFields.length <= 30 && body.customFields.every((f: any) => f && typeof f.key === 'string' && (f.value == null || ['string','number','boolean'].includes(typeof f.value))), 'Campos personalizados inv\u00e1lidos.');
+    const fee = body.customFields.find((field: any) => field.key === 'honorarios');
+    if (!('value' in body) && fee?.value != null && String(fee.value).trim() !== '') {
+      const amount = Number(fee.value);
+      required(Number.isFinite(amount) && amount >= 0, 'Honorários inválidos.');
+      lead.value = amount;
+    }
     lead.customFields = body.customFields.filter((f: any) => f.value != null && initialFields(pipe).some(p => p.key === f.key)).map((f: any) => { const field = initialFields(pipe).find(p => p.key === f.key)!; return { key: f.key, label: field.label, type: field.type as any, stage: pipe.steps[0].name, value: f.value }; });
   }
   if (body.stage && body.stage !== lead.stage) {
@@ -149,7 +159,7 @@ function updateLead(db: DemoDatabase, lead: DemoLead, body: Record<string, any>,
       createAppointment(db, { leadId: lead.id, ownerUserId: lead.ownerUserId || ADMIN_ID, type: 'follow_up', channel: channel === 'telefone' ? 'phone' : channel, scheduledAt, notes }, now);
     }
   }
-  lead.demoRevenue = lead.status === STATUS.won ? money(lead.pipeId === ACCOUNTING_ID ? lead.value : lead.value * .02) : 0;
+  lead.demoRevenue = lead.status === STATUS.won ? money(lead.value) : 0;
   lead.updatedAt = now;
   return decorateLead(db, lead, new Date(now));
 }
@@ -165,7 +175,7 @@ function createAppointment(db: DemoDatabase, body: Record<string, any>, now: str
   return decorateAppointment(db, item);
 }
 
-/** Metrics use a creation-date cohort shared with CRM. Revenue is not credit principal. */
+/** Metrics use a creation-date cohort shared with CRM. Contracted fees include a first monthly fee and one-off service fees, never a recurring-revenue total. */
 export function indicators(db: DemoDatabase, kind: string, query: URLSearchParams, now = new Date()) {
   const filter = new URLSearchParams();
   if (query.get('startDate')) filter.set('dateFrom', query.get('startDate')!);
@@ -180,15 +190,15 @@ export function indicators(db: DemoDatabase, kind: string, query: URLSearchParam
     if (Number.isFinite(duration) && duration > 0) { prevFilter.set('dateFrom', new Date(startMs - duration).toISOString().slice(0, 10)); prevFilter.set('dateTo', new Date(startMs - DAY_MS).toISOString().slice(0, 10)); previous = filterLeads(db, prevFilter, now); }
   }
   const won = (rows: DemoLead[]) => rows.filter(l => l.status === STATUS.won);
-  const revenue = (rows: DemoLead[]) => money(sum(won(rows), l => l.pipeId === ACCOUNTING_ID ? l.value : l.value * .02));
+  const revenue = (rows: DemoLead[]) => money(sum(won(rows), l => l.value));
   const alerts = (rows: DemoLead[]) => rows.filter(l => sla(l, now) === 'overdue').length;
   const stats = (rows: DemoLead[], prev: DemoLead[]) => {
     const wins = won(rows); const priorWins = won(prev); const conv = rate(wins.length, rows.length);
     return { count: rows.length, countChange: change(rows.length, prev.length), wins: wins.length, winsChange: change(wins.length, priorWins.length), revenue: revenue(rows), revenueChange: change(revenue(rows), revenue(prev)), conversion: conv, conversionChange: money(conv - rate(priorWins.length, prev.length)), alerts: alerts(rows) };
   };
-  const accounting = all.filter(l => l.pipeId === ACCOUNTING_ID); const financial = all.filter(l => l.pipeId === FINANCIAL_ID);
-  const a = stats(accounting, previous.filter(l => l.pipeId === ACCOUNTING_ID)); const f = stats(financial, previous.filter(l => l.pipeId === FINANCIAL_ID)); const g = stats(all, previous);
-  const financialValue = sum(won(financial), l => l.value);
+  required(['general', 'accounting'].includes(kind), 'Indicador indisponível.', 404);
+  const accounting = all.filter(l => l.pipeId === ACCOUNTING_ID);
+  const a = stats(accounting, previous.filter(l => l.pipeId === ACCOUNTING_ID)); const g = stats(all, previous);
   if (kind === 'general') {
     const firstMonth = all.map(l => calendar(l.createdAt).slice(0, 7)).sort()[0] || calendar(now.toISOString()).slice(0, 7);
     const endMonth = (end || calendar(now.toISOString())).slice(0, 7);
@@ -198,23 +208,20 @@ export function indicators(db: DemoDatabase, kind: string, query: URLSearchParam
     return {
       summary: { healthScore: all.length ? Math.max(0, Math.round(100 - rate(g.alerts, all.length))) : 0, healthStatus: !all.length || g.alerts ? 'ATTENTION' : 'GOOD', totalLeads: g.count, totalLeadsChange: g.countChange, openOpportunities: all.filter(l => l.status === STATUS.opportunity).length, totalRevenue: g.revenue, totalRevenueChange: g.revenueChange, conversionRate: g.conversion, conversionRateChange: g.conversionChange, criticalAlerts: g.alerts },
       accounting: { totalLeads: a.count, totalLeadsChange: a.countChange, clientsActivated: a.wins, recurringRevenue: a.revenue, conversionRate: a.conversion, alertsCount: a.alerts },
-      financial: { totalLeads: f.count, totalLeadsChange: f.countChange, releases: f.wins, releasedValue: financialValue, approvalRate: f.conversion, alertsCount: f.alerts },
-      evolution: months.map(month => { const rows = all.filter(l => calendar(l.createdAt).startsWith(month)); return { label: `${month.slice(5)}/${month.slice(2, 4)}`, totalLeads: rows.length, accountingLeads: rows.filter(l => l.pipeId === ACCOUNTING_ID).length, financialLeads: rows.filter(l => l.pipeId === FINANCIAL_ID).length, totalRevenue: revenue(rows), conversionRate: rate(won(rows).length, rows.length), criticalAlerts: alerts(rows) }; }),
-      operationShare: [{ operation: 'Contabilidade', leads: a.count, revenue: a.revenue, alertsCount: a.alerts, conversionRate: a.conversion }, { operation: 'Financeira', leads: f.count, revenue: f.revenue, alertsCount: f.alerts, conversionRate: f.conversion }],
+      evolution: months.map(month => { const rows = all.filter(l => calendar(l.createdAt).startsWith(month)); return { label: `${month.slice(5)}/${month.slice(2, 4)}`, totalLeads: rows.length, accountingLeads: rows.filter(l => l.pipeId === ACCOUNTING_ID).length, openingLeads: rows.filter(l => l.pipeId === OPENING_ID).length, onboardingLeads: rows.filter(l => l.pipeId === ONBOARDING_ID).length, totalRevenue: revenue(rows), conversionRate: rate(won(rows).length, rows.length), criticalAlerts: alerts(rows) }; }),
+      operationShare: PIPES.map(pipe => { const rows = all.filter(l => l.pipeId === pipe.id); const metric = stats(rows, previous.filter(l => l.pipeId === pipe.id)); return { pipeId: pipe.id, slug: pipe.slug, operation: pipe.name, leads: metric.count, revenue: metric.revenue, alertsCount: metric.alerts, conversionRate: metric.conversion }; }),
     };
   }
-  const rows = kind === 'accounting' ? accounting : financial;
-  const pipe = getPipe(kind === 'accounting' ? ACCOUNTING_ID : FINANCIAL_ID);
+  const rows = accounting;
+  const pipe = getPipe(ACCOUNTING_ID);
   const counts = pipe.steps.map(s => rows.filter(l => l.stage === s.name));
   const funnel = pipe.steps.map((s, i) => ({ stage: s.name, count: counts[i].length, value: sum(counts[i], l => l.value), percentOfTotal: rate(counts[i].length, rows.length), conversionFromPrev: i === 0 ? 100 : rate(rows.filter(l => l.stageHistory?.some(h => h.stageName === s.name) && l.stageHistory?.some(h => h.stageName === pipe.steps[i - 1].name)).length, rows.filter(l => l.stageHistory?.some(h => h.stageName === pipe.steps[i - 1].name)).length) }));
   // Current inventory counts and historical progression are separate: transition percentages use unique historical visitors.
-  if (kind === 'accounting') return {
+  return {
     summary: { leadsReceived: a.count, leadsReceivedChange: a.countChange, proposalsSent: rows.filter(l => l.stageHistory?.some(h => h.stageName === pipe.steps[2].name)).length, proposalsAccepted: a.wins, contractsSigned: a.wins, clientsActivated: a.wins, clientsActivatedChange: a.winsChange, recurringRevenue: a.revenue, recurringRevenueChange: a.revenueChange, averageTicket: a.wins ? money(a.revenue / a.wins) : 0, conversionRate: a.conversion, conversionRateChange: a.conversionChange },
     funnel, ranking: USERS.map(u => { const selected = rows.filter(l => l.ownerUserId === u.id); return { userId: u.id, name: u.name, leads: selected.length, clients: won(selected).length, revenue: revenue(selected), conversionRate: rate(won(selected).length, selected.length) }; }), alertsCount: a.alerts,
   };
-  required(kind === 'financial', 'Indicador indispon\u00edvel.', 404);
-  const prevValue = sum(won(previous.filter(l => l.pipeId === FINANCIAL_ID)), l => l.value);
-  return { summary: { financialLeads: f.count, financialLeadsChange: f.countChange, releases: f.wins, releasesChange: f.winsChange, forecastValue: sum(rows.filter(isOpen), l => l.value), releasedValue: financialValue, releasedValueChange: change(financialValue, prevValue), pendingValue: sum(rows.filter(isOpen), l => l.value), averageTicket: f.wins ? money(financialValue / f.wins) : 0, approvalRate: f.conversion, approvalRateChange: f.conversionChange }, funnel, ranking: USERS.map(u => { const selected = rows.filter(l => l.ownerUserId === u.id); return { userId: u.id, name: u.name, leads: selected.length, released: won(selected).length, releasedValue: sum(won(selected), l => l.value), approvalRate: rate(won(selected).length, selected.length) }; }), alertsCount: f.alerts };
+
 }
 
 /** Route coverage is explicit. Unimplemented operations are never forwarded or silently accepted. */
@@ -225,7 +232,7 @@ export function execute(db: DemoDatabase, method: string, pathname: string, quer
   if (pathname === '/auth/refresh' && method === 'POST') { required(body.refreshToken === REFRESH_TOKEN, 'Sess\u00e3o demo inv\u00e1lida.', 401); return { status: 200, body: tokens() }; }
   if (pathname === '/auth/logout' && method === 'POST') return { status: 200, body: { ok: true } };
   if (pathname === '/auth/me' && read) return ok(USERS[0]);
-  if (pathname === '/settings/public' && read) return ok({ pipes: PIPES, branding: { appName: 'WMS Empresarial - Demonstra\u00e7\u00e3o', appNameShort: 'WMS Demo', copyright: 'Dados fict\u00edcios. Nenhuma opera\u00e7\u00e3o externa.' } });
+  if (pathname === '/settings/public' && read) return ok({ pipes: PIPES, branding: { appName: 'CRM Cont\u00e1bil - Demonstra\u00e7\u00e3o', appNameShort: 'CRM Contábil', copyright: 'Dados fict\u00edcios. Nenhuma opera\u00e7\u00e3o externa.' } });
   if (pathname === '/settings' && read) return ok({ slaDays: 5 });
   if (pathname === '/users' && read) return ok(paginate(USERS.filter(u => !query.get('search') || u.name.toLowerCase().includes(query.get('search')!.toLowerCase())), query));
   if (pathname === '/products' && read) return ok(paginate(PRODUCTS.filter(p => !query.get('pipeId') || p.pipeId === query.get('pipeId')), query));
@@ -233,7 +240,6 @@ export function execute(db: DemoDatabase, method: string, pathname: string, quer
   if (pathname === '/partners' && read) return ok(PARTNERS);
   if (pathname === '/service-units' && read) return ok(paginate([{ id: 'demo-unit', name: 'Unidade demonstrativa', active: true }], query));
   if (pathname === '/campaigns' && read) return ok(paginate([], query));
-  if (pathname === '/financeira/settings' && read) return ok({ creditoPipeId: '', repassePipeId: '', creditoDefaultProductId: '', automaticSiopiRoutingEnabled: false, whatsappConfigured: false });
   if (pathname === '/pdf-templates' && read) return ok([]);
   if (pathname === '/notifications' && read) return ok(db.notifications);
   if (pathname === '/notifications/read-all' && method === 'PATCH') { db.notifications.forEach(n => { n.read = true; }); return ok({ count: db.notifications.length }); }
@@ -251,7 +257,7 @@ export function execute(db: DemoDatabase, method: string, pathname: string, quer
   if (pathname === '/leads' && method === 'POST') {
     const pipe = getPipe(body.pipeId); const id = nextId(db, 'lead');
     const lead: DemoLead = { id, name: text(body.name, 'Nome', 250), pipeId: pipe.id, businessUnit: pipe.unitType, status: STATUS.lead as Lead['status'], stage: pipe.steps[0].name, value: 0, ownerUserId: ADMIN_ID, responsibleUserId: ADMIN_ID, origin: 'manual', sourceType: 'manual', sourceSubtype: 'demonstracao', createdAt: at, updatedAt: at, enteredStageAt: at, comments: [], timeline: [], stageHistory: [{ id: nextId(db, 'stage'), stageName: pipe.steps[0].name, enteredAt: at, slaStatus: 'on_time' }], labels: [], customFields: [] };
-    db.leads.push(lead); updateLead(db, lead, { ...body, stage: pipe.steps[0].name }, at);
+    db.leads.push(lead); updateLead(db, lead, { productId: PRODUCTS.find(product => product.pipeId === pipe.id)?.id, ...body, stage: pipe.steps[0].name }, at);
     for (const field of initialFields(pipe).filter(f => f.required)) required(lead.customFields?.some(f => f.key === field.key && f.value != null && String(f.value).trim()), `Preencha ${field.label}.`);
     event(db, lead, 'created', 'Oportunidade demonstrativa criada.', at); return ok(decorateLead(db, lead, now), 201);
   }

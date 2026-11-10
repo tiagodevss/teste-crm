@@ -2,7 +2,6 @@ import type { UserProfile } from './types';
 
 export enum AppPath {
   LOGIN = '/login',
-  FINANCIAL_TRACKING = '/acompanhar/:token',
   PARTNER_PORTAL = '/portal/parceiro',
   PARTNER_PROCESS = '/portal/parceiro/processos/:journeyId',
   PUBLIC_SURVEY = '/pesquisa-publica',
@@ -12,7 +11,6 @@ export enum AppPath {
   INDICADORES = '/indicadores',
   INDICADORES_GERAL = '/indicadores/geral',
   INDICADORES_CONTABILIDADE = '/indicadores/contabilidade',
-  INDICADORES_FINANCEIRA = '/indicadores/financeira',
   INDICADORES_RELATORIOS = '/indicadores/relatorios',
   INDICADORES_RELATORIO = '/indicadores/relatorio-comercial',
   ACESSORIAS = '/acessorias',
@@ -24,9 +22,6 @@ export enum AppPath {
   CLIENTS = '/clientes',
   CLIENT = '/cliente',
   LEAD = '/lead',
-  FINANCE = '/finance',
-  FINANCE_QUEUE = '/finance/fila',
-  LEGALIZATION_QUEUE = '/finance/legalizacao',
   GOALS = '/metas',
   CATEGORIES = '/categories',
   UNIDADES_ATENDIMENTO = '/unidades-atendimento',
@@ -65,7 +60,6 @@ export const ROUTE_PATHS: Record<string, AppPath> = {
   [AppPath.INDICADORES]: AppPath.INDICADORES,
   [AppPath.INDICADORES_GERAL]: AppPath.INDICADORES,
   [AppPath.INDICADORES_CONTABILIDADE]: AppPath.INDICADORES,
-  [AppPath.INDICADORES_FINANCEIRA]: AppPath.INDICADORES,
   [AppPath.INDICADORES_RELATORIOS]: AppPath.INDICADORES,
   [AppPath.INDICADORES_RELATORIO]: AppPath.INDICADORES,
   [AppPath.ACESSORIAS]: AppPath.ACESSORIAS,
@@ -75,9 +69,6 @@ export const ROUTE_PATHS: Record<string, AppPath> = {
   [AppPath.ACTIVITIES_TEAM]: AppPath.ACTIVITIES_TEAM,
   [AppPath.COMMERCIAL_REPORT]: AppPath.COMMERCIAL_REPORT,
   [AppPath.CLIENTS]: AppPath.CLIENTS,
-  [AppPath.FINANCE]: AppPath.FINANCE,
-  [AppPath.FINANCE_QUEUE]: AppPath.FINANCE_QUEUE,
-  [AppPath.LEGALIZATION_QUEUE]: AppPath.LEGALIZATION_QUEUE,
   [AppPath.GOALS]: AppPath.GOALS,
   [AppPath.CATEGORIES]: AppPath.CATEGORIES,
   [AppPath.UNIDADES_ATENDIMENTO]: AppPath.UNIDADES_ATENDIMENTO,
@@ -91,13 +82,12 @@ export const ROUTE_PATHS: Record<string, AppPath> = {
   [AppPath.SETTINGS]: AppPath.SETTINGS,
   [AppPath.PROFILE]: AppPath.PROFILE,
 };
-export type View = 'indicadores' | 'acessorias' | 'crm' | 'activities' | 'clients' | 'products' | 'categories' | 'unidades-atendimento' | 'campaigns' | 'users' | 'profiles' | 'hierarchy' | 'finance' | 'goals' | 'cold-leads' | 'public-surveys' | 'relatorios' | 'settings';
-export const PATH_TO_VIEW: Record<Exclude<AppPath, AppPath.LOGIN | AppPath.FINANCIAL_TRACKING | AppPath.PARTNER_PORTAL | AppPath.PARTNER_PROCESS | AppPath.PUBLIC_SURVEY | AppPath.FORGOT_PASSWORD | AppPath.RESET_PASSWORD>, View> = {
+export type View = 'indicadores' | 'acessorias' | 'crm' | 'activities' | 'clients' | 'products' | 'categories' | 'unidades-atendimento' | 'campaigns' | 'users' | 'profiles' | 'hierarchy' | 'goals' | 'cold-leads' | 'public-surveys' | 'relatorios' | 'settings';
+export const PATH_TO_VIEW: Record<Exclude<AppPath, AppPath.LOGIN | AppPath.PARTNER_PORTAL | AppPath.PARTNER_PROCESS | AppPath.PUBLIC_SURVEY | AppPath.FORGOT_PASSWORD | AppPath.RESET_PASSWORD>, View> = {
   [AppPath.DASHBOARD]: 'indicadores',
   [AppPath.INDICADORES]: 'indicadores',
   [AppPath.INDICADORES_GERAL]: 'indicadores',
   [AppPath.INDICADORES_CONTABILIDADE]: 'indicadores',
-  [AppPath.INDICADORES_FINANCEIRA]: 'indicadores',
   [AppPath.INDICADORES_RELATORIOS]: 'indicadores',
   [AppPath.INDICADORES_RELATORIO]: 'indicadores',
   [AppPath.ACESSORIAS]: 'acessorias',
@@ -109,9 +99,6 @@ export const PATH_TO_VIEW: Record<Exclude<AppPath, AppPath.LOGIN | AppPath.FINAN
   [AppPath.CLIENTS]: 'clients',
   [AppPath.CLIENT]: 'clients',
   [AppPath.LEAD]: 'crm',
-  [AppPath.FINANCE]: 'finance',
-  [AppPath.FINANCE_QUEUE]: 'finance',
-  [AppPath.LEGALIZATION_QUEUE]: 'finance',
   [AppPath.GOALS]: 'goals',
   [AppPath.CATEGORIES]: 'categories',
   [AppPath.UNIDADES_ATENDIMENTO]: 'unidades-atendimento',
@@ -130,7 +117,7 @@ export const PATH_TO_VIEW: Record<Exclude<AppPath, AppPath.LOGIN | AppPath.FINAN
 };
 export const VIEW_TO_PATH: Record<View, AppPath> = {
   indicadores: AppPath.INDICADORES, acessorias: AppPath.ACESSORIAS, crm: AppPath.CRM,
-  activities: AppPath.ACTIVITIES, clients: AppPath.CLIENTS, finance: AppPath.FINANCE,
+  activities: AppPath.ACTIVITIES, clients: AppPath.CLIENTS,
   goals: AppPath.GOALS, categories: AppPath.CATEGORIES, 'unidades-atendimento': AppPath.UNIDADES_ATENDIMENTO,
   products: AppPath.PRODUCTS, campaigns: AppPath.CAMPAIGNS, users: AppPath.USERS,
   profiles: AppPath.PROFILES, hierarchy: AppPath.HIERARCHY, 'cold-leads': AppPath.COLD_LEADS,
@@ -160,7 +147,6 @@ export const getViewFromPathname = (pathname: string): View => {
   if (pathname === AppPath.INDICADORES || pathname.startsWith(`${AppPath.INDICADORES}/`)) return 'indicadores';
   if (pathname === AppPath.ACTIVITIES || pathname.startsWith(`${AppPath.ACTIVITIES}/`)) return 'activities';
   if (pathname === AppPath.COMMERCIAL_REPORT) return 'relatorios';
-  if (pathname === AppPath.FINANCE || pathname.startsWith(`${AppPath.FINANCE}/`)) return 'finance';
   if (pathname === AppPath.SETTINGS || pathname.startsWith(`${AppPath.SETTINGS}/`)) return 'settings';
   for (const [basePath, view] of Object.entries(DETAIL_PATH_PATTERNS)) if (pathname === basePath || pathname.startsWith(`${basePath}/`)) return view;
   const path = pathname === '/' ? AppPath.INDICADORES : (pathname as AppPath);
@@ -201,16 +187,15 @@ export function getActivitiesTabFromPathname(pathname: string): ActivitiesTab {
   return 'overview';
 }
 export const ACTIVITIES_TAB_TO_PATH: Record<ActivitiesTab, AppPath> = { overview: AppPath.ACTIVITIES, agenda: AppPath.ACTIVITIES_AGENDA, team: AppPath.ACTIVITIES_TEAM };
-export type IndicadoresAdminTab = 'geral' | 'contabilidade' | 'financeira' | 'relatorios';
+export type IndicadoresAdminTab = 'geral' | 'contabilidade' | 'relatorios';
 export type IndicadoresNonAdminTab = 'dashboard' | 'report';
 export function getIndicadoresAdminTabFromPathname(pathname: string): IndicadoresAdminTab {
   if (pathname.startsWith(AppPath.INDICADORES_CONTABILIDADE)) return 'contabilidade';
-  if (pathname.startsWith(AppPath.INDICADORES_FINANCEIRA)) return 'financeira';
   if (pathname.startsWith(AppPath.INDICADORES_RELATORIOS)) return 'relatorios';
   return 'geral';
 }
 export function getIndicadoresNonAdminTabFromPathname(pathname: string): IndicadoresNonAdminTab {
   return pathname.startsWith(AppPath.INDICADORES_RELATORIO) ? 'report' : 'dashboard';
 }
-export const INDICADORES_ADMIN_TAB_TO_PATH: Record<IndicadoresAdminTab, AppPath> = { geral: AppPath.INDICADORES_GERAL, contabilidade: AppPath.INDICADORES_CONTABILIDADE, financeira: AppPath.INDICADORES_FINANCEIRA, relatorios: AppPath.INDICADORES_RELATORIOS };
+export const INDICADORES_ADMIN_TAB_TO_PATH: Record<IndicadoresAdminTab, AppPath> = { geral: AppPath.INDICADORES_GERAL, contabilidade: AppPath.INDICADORES_CONTABILIDADE, relatorios: AppPath.INDICADORES_RELATORIOS };
 export const INDICADORES_NON_ADMIN_TAB_TO_PATH: Record<IndicadoresNonAdminTab, AppPath> = { dashboard: AppPath.INDICADORES, report: AppPath.INDICADORES_RELATORIO };

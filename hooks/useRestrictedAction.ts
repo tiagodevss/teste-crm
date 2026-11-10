@@ -90,12 +90,6 @@ const ACTION_POLICIES = {
     label: 'Salvar configurações',
     hint: 'Permissão settings.manage necessária para salvar ajustes do sistema.',
   },
-  'finance.export': {
-    permissions: ['finance.export', 'finance.manage'],
-    strategy: 'disable',
-    label: 'Exportar financeiro',
-    hint: 'Permissão finance.export ou finance.manage necessária para exportar relatórios financeiros.',
-  },
   'goals.create': {
     permissions: ['goals.create', 'goals.manage'],
     strategy: 'hide',

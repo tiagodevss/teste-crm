@@ -10,7 +10,6 @@ import { ImobiliariaDashboard } from '../../components/Dashboard/ImobiliariaDash
 import ActivityReportPage from './components/ActivityReportPage';
 import { GeneralDashboard } from './components/GeneralDashboard';
 import { AccountingDashboard } from './components/AccountingDashboard';
-import { FinancialDashboard } from './components/FinancialDashboard';
 import {
   getIndicadoresAdminTabFromPathname,
   getIndicadoresNonAdminTabFromPathname,
@@ -27,15 +26,13 @@ const TAB_BASE =
 
 const ADMIN_TAB_LABELS: Record<IndicadoresAdminTab, string> = {
   geral: 'Geral',
-  contabilidade: 'Contabilidade',
-  financeira: 'Financeira',
+  contabilidade: 'Comercial contábil',
   relatorios: 'Relatórios',
 };
 
 const ADMIN_PANEL_IDS: Record<IndicadoresAdminTab, string> = {
   geral: 'indicadores-panel-geral',
   contabilidade: 'indicadores-panel-contabilidade',
-  financeira: 'indicadores-panel-financeira',
   relatorios: 'indicadores-panel-relatorios',
 };
 
@@ -53,7 +50,7 @@ function IndicadoresPageHeader() {
   return (
     <div className="mb-6">
       <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Indicadores</h1>
-      <p className="text-gray-500 text-sm">Acompanhe KPIs e produtividade em tempo real.</p>
+      <p className="text-gray-500 text-sm">Acompanhe os processos e os honorários do seu escritório contábil.</p>
       {!isDemo && <details className="mt-3 rounded-lg border border-gray-200 bg-gray-50/80 px-4 py-3 text-sm text-gray-600 group">
         <summary className="cursor-pointer list-none font-semibold text-gray-700 flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-salesforce-blue/40 rounded">
           <HelpCircle size={16} className="text-gray-400" aria-hidden />
@@ -219,15 +216,6 @@ export const Indicadores: React.FC = () => {
             aria-labelledby="indicadores-tab-contabilidade"
           >
             <AccountingDashboard />
-          </div>
-        ) : null}
-        {adminTab === 'financeira' ? (
-          <div
-            role="tabpanel"
-            id={ADMIN_PANEL_IDS.financeira}
-            aria-labelledby="indicadores-tab-financeira"
-          >
-            <FinancialDashboard />
           </div>
         ) : null}
         {adminTab === 'relatorios' && canReadActivityReport ? (

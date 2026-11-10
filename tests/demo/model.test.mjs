@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import { createSeed, PIPES } from '../../demo/seed.ts';
 import { createRepository, clearDemo, validateDatabase } from '../../demo/storage.ts';
 import { execute, indicators, DEMO_LOGIN, DEMO_PASSWORD } from '../../demo/model.ts';
-import { HERO_ID, ACCOUNTING_ID, FINANCIAL_ID, STORAGE_KEY, STATUS, DemoError } from '../../demo/types.ts';
+import { HERO_ID, ACCOUNTING_ID, OPENING_ID, ONBOARDING_ID, STORAGE_KEY, STATUS, DemoError } from '../../demo/types.ts';
 const NOW = new Date('2026-11-10T15:00:00Z');
 const memory = () => { const map = new Map(); return { getItem: k => map.get(k) ?? null, setItem: (k,v) => map.set(k,v), removeItem: k => map.delete(k), map }; };
 const setup = () => { const storage = memory(); return { storage, repo: createRepository(storage, () => NOW) }; };
 const read = (repo, path, params = {}) => repo.request('GET', path, new URLSearchParams(params)).body;
 const write = (repo, method, path, body) => repo.request(method, path, new URLSearchParams(), body).body;
 
-test('seed deterministic, referentially valid, 108 fictitious records with two independent operations', () => {
+test('seed deterministic, referentially valid, 108 fictitious records with three independent accounting workflows', () => {
   const first = createSeed(NOW); assert.deepEqual(first, createSeed(NOW)); validateDatabase(first);
   assert.equal(first.leads.length,108); assert.equal(first.leads.filter(l=>l.pipeId===ACCOUNTING_ID).length,72);
   assert.ok(first.leads.every(l=>l.email.endsWith('@example.invalid') && l.phone==='00000000000'));
@@ -30,15 +30,6 @@ test('list filters, summary and per-stage pagination use the same cohort', () =>
   for (const stage of Object.keys(counts)) assert.equal(read(repo,'/leads',{...params,stage}).total,counts[stage]);
   assert.equal(read(repo,'/leads',{...params,search:'cannotmatch'}).total,0);
   const sorted=read(repo,'/leads',{limit:'5',sortBy:'name',sortOrder:'asc'}); assert.equal(sorted.data.length,5); assert.equal(sorted.totalPages,22);
-});
-test('metrics derive from matching records, separated credit principal and illustrative commission', () => {
-  const {repo}=setup(); const db=repo.snapshot(); const query=new URLSearchParams({startDate:'2026-10-01',endDate:'2026-11-10'});
-  const general=indicators(db,'general',query,NOW); const accounting=indicators(db,'accounting',query,NOW); const financial=indicators(db,'financial',query,NOW);
-  assert.equal(general.summary.totalLeads, accounting.summary.leadsReceived+financial.summary.financialLeads);
-  assert.equal(general.summary.totalRevenue,accounting.summary.recurringRevenue+financial.summary.releasedValue*.02);
-  assert.equal(general.operationShare.reduce((n,o)=>n+o.leads,0),general.summary.totalLeads);
-  assert.equal(accounting.funnel.reduce((n,s)=>n+s.count,0),accounting.summary.leadsReceived);
-  assert.equal(financial.ranking.reduce((n,r)=>n+r.releasedValue,0),financial.summary.releasedValue);
 });
 test('hero conversion persists, creates the client view and changes the indicators exactly once', () => {
   const {repo,storage}=setup(); const before=read(repo,'/indicators/accounting');
@@ -111,7 +102,7 @@ test('unknown routes and external-service commands are rejected, never fake succ
 });
 test('empty and impossible filters produce finite zero-valued metrics', () => {
   const db=createSeed(NOW); const q=new URLSearchParams({responsibleId:'unknown'});
-  for (const kind of ['general','accounting','financial']) assert.ok(!JSON.stringify(indicators(db,kind,q,NOW)).includes('null'));
+  for (const kind of ['general','accounting']) assert.ok(!JSON.stringify(indicators(db,kind,q,NOW)).includes('null'));
   assert.equal(indicators(db,'general',q,NOW).summary.totalLeads,0);
 });
 

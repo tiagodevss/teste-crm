@@ -24,7 +24,7 @@ interface FetchLeadsParams extends PaginationParams {
   campaignId?: string;
   partnerId?: string;
   productId?: string;
-  clientWms?: 'yes' | 'no';
+  existingClient?: 'yes' | 'no';
   dateField?: 'createdAt' | 'lastContactDate' | 'importDate';
   hasImportDate?: boolean;
   dateFrom?: string;

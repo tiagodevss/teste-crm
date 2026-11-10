@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useWatch } from 'react-hook-form';
 import { Lead, FieldConfig } from '../../../types';
 import { Modal, ModalHeader, ModalFooter } from '../../../components/ui/Modal';
-import { DynamicFieldRenderer, type FinanceiraUploadContext } from '../../../components/DynamicFieldRenderer';
+import { DynamicFieldRenderer } from '../../../components/DynamicFieldRenderer';
 import { useUserStore } from '../../Login/store/useUserStore';
 import type { UseFormRegister, Control, FieldErrors } from 'react-hook-form';
 import { filterVisibleFields, getEditableFieldKeys } from '../../../lib/field-rules';
@@ -20,10 +20,9 @@ export interface StageChangeModalProps {
     setUploadingAttachmentKey: (key: string | null) => void;
     onConfirm: (e?: React.BaseSyntheticEvent) => Promise<void>;
     onClose: () => void;
-    /** Funis financeiros: a observação de movimentação não é pedida. */
+
     hideObservation?: boolean;
-    /** Funis financeiros: anexos vão para o armazenamento privado. */
-    financeiraUploadContext?: FinanceiraUploadContext;
+
 }
 
 export function StageChangeModal({
@@ -39,7 +38,6 @@ export function StageChangeModal({
     onConfirm,
     onClose,
     hideObservation = false,
-    financeiraUploadContext,
 }: StageChangeModalProps) {
     const watchedValues = useWatch({ control }) as Record<string, unknown>;
     const userProfileCode = useUserStore((state) => state.user?.profile?.code ?? state.user?.role);
@@ -120,8 +118,7 @@ export function StageChangeModal({
                         {visibleFields.map((field) => (
                             <div key={field.key} className={!editableKeys.has(field.key) ? 'pointer-events-none opacity-60' : undefined}>
                                 <DynamicFieldRenderer
-                                    financeiraUploadContext={financeiraUploadContext}
-                                    field={field}
+                                                                    field={field}
                                     register={register}
                                     control={control}
                                     errors={errors}

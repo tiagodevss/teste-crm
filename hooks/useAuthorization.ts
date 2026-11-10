@@ -36,7 +36,6 @@ const VIEW_PRIORITY: View[] = [
   'categories',
   'hierarchy',
   'cold-leads',
-  'finance',
   'goals',
   'users',
   'profiles',
